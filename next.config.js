@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: 'build',
+  // distDir: 'build', // Removed custom distDir for Vercel compatibility
   transpilePackages: ['@multiversx/sdk-dapp-ui'],
   webpack: (config) => {
     config.resolve.fallback = { fs: false };
