@@ -3,18 +3,12 @@ import { MvxCopyButtonPropsType } from '@/lib/sdkDappUI/sdkDappUI.types';
 
 export const CopyButton = ({
   className,
-  text,
-  copyIcon,
-  iconClass,
-  successIcon
+  text
 }: Partial<MvxCopyButtonPropsType>) => {
   return (
     <MvxCopyButton
       class={className}
       text={text}
-      copyIcon={copyIcon}
-      iconClass={iconClass}
-      successIcon={successIcon}
     />
   );
 };

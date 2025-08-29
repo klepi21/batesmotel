@@ -1,17 +1,19 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGithub } from '@fortawesome/free-brands-svg-icons';
-import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { GITHUB_REPO_URL } from '@/config';
+// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import { Button } from '@/components/Button';
 
 export const GitHubButton = () => {
   return (
-    <a
-      href={GITHUB_REPO_URL}
-      rel='noopener noreferrer'
-      target='_blank'
-      className='inline-block rounded-lg px-3 py-2 text-center hover:no-underline my-0 text-gray-600 hover:bg-slate-100 mx-0'
+    <Button
+      onClick={() => {
+        window.open(
+          'https://github.com/multiversx/mx-template-dapp-nextjs',
+          '_blank'
+        );
+      }}
+      className='inline-block rounded-lg px-3 py-2 text-center hover:no-underline my-0 text-white hover:bg-white hover:text-primary-darkBlue mx-0 transition-colors duration-200'
     >
-      <FontAwesomeIcon icon={faGithub as IconProp} />
-    </a>
+      GitHub
+    </Button>
   );
 };

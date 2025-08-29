@@ -5,7 +5,7 @@ import {
   GlobalSelectorsEnum,
   GlobalDataEnum
 } from '../constants/enums';
-import { DEVNET_API } from '../constants/globalLinks';
+import { MAINNET_API } from '../constants/globalLinks';
 
 // Check the url global function
 Cypress.Commands.add('checkUrl', (url) => {
@@ -42,7 +42,7 @@ Cypress.Commands.add('getSelector', (selector, ...cypressAction) => {
 
 // Add the custom command for api intercepts
 Cypress.Commands.add('apiIntercept', (method, param) => {
-  cy.intercept(method, `${DEVNET_API}${param}`).as(param);
+  cy.intercept(method, `${MAINNET_API}${param}`).as(param);
 });
 
 Cypress.on('uncaught:exception', () => {

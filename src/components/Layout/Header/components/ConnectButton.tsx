@@ -1,13 +1,32 @@
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/Button';
-import { RouteNamesEnum } from '@/localConstants';
+'use client';
+
+import { UnlockPanelManager } from '@/lib';
+import { GradientButton } from '@/components/ui/gradient-button';
 
 export const ConnectButton = () => {
-  const router = useRouter();
+  // const { isLoggedIn } = useGetLoginInfo(); // Removed unused variable
 
   const handleClick = () => {
-    router.push(RouteNamesEnum.unlock);
+    const unlockPanelManager = UnlockPanelManager.init({
+      loginHandler: () => {
+        // User successfully logged in
+        console.log('User logged in successfully');
+      },
+      onClose: () => {
+        // Modal closed
+        console.log('Unlock panel closed');
+      }
+    });
+    
+    unlockPanelManager.openUnlockPanel();
   };
 
-  return <Button onClick={handleClick}>Connect</Button>;
+  return (
+    <GradientButton
+      onClick={handleClick}
+      className='min-w-[100px] px-6 py-2 text-sm'
+    >
+      Connect
+    </GradientButton>
+  );
 };

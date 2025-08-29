@@ -1,9 +1,12 @@
+export enum SessionStorageKeysEnum {
+  lastSignedMessageSessionId = 'lastSignedMessageSessionId',
+  lastTransactionId = 'lastTransactionId',
+  lastSignedMessage = 'lastSignedMessage'
+}
+
 export enum SessionEnum {
   batchSessionId = 'batchSessionId',
   signedSessionId = 'signedSessionId',
-  rawPingPongSessionId = 'rawPingPongSessionId',
-  abiPingPongSessionId = 'abiPingPongSessionId',
-  abiPingPongServiceSessionId = 'abiPingPongServiceSessionId',
   batchId = 'batchId',
   sendBatchTransactionsOnDemand = 'sendBatchTransactionsOnDemand'
 }

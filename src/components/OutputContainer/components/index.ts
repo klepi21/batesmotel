@@ -1,2 +1,2 @@
-export * from './PingPongOutput';
+export * from './TransactionOutput';
 export * from './TransactionsOutput';

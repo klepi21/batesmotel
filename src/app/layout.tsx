@@ -1,17 +1,21 @@
 import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Roboto_Condensed } from 'next/font/google';
 import { Layout } from '@/components/Layout';
 import App from './index';
 import { InitAppWrapper } from '@/wrappers';
 
-const inter = Inter({ subsets: ['latin'] });
+const robotoCondensed = Roboto_Condensed({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  variable: '--font-roboto-condensed'
+});
 
 export const metadata: Metadata = {
-  title: 'Template dApp Next.js',
+  title: 'BatesMote',
   description:
-    'A basic implementation of MultiversX dApp providing the basics for MultiversX authentication and TX signing.',
+    'BatesMote - A MultiversX dApp providing the basics for MultiversX authentication and TX signing.',
   viewport: {
     width: 'device-width',
     initialScale: 1
@@ -23,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang='en' className={inter.className}>
+    <html lang='en' className={robotoCondensed.className}>
       <body>
         <InitAppWrapper>
           <App>

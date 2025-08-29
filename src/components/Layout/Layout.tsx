@@ -1,12 +1,16 @@
-import { PropsWithChildren } from 'react';
-import { Footer } from './Footer';
-import { Header } from './Header';
+'use client';
 
-export const Layout = ({ children }: PropsWithChildren) => {
+import { ReactNode } from 'react';
+import { Footer } from './Footer';
+
+interface LayoutType {
+  children: ReactNode;
+}
+
+export const Layout = ({ children }: LayoutType) => {
   return (
-    <div className='flex min-h-screen flex-col bg-slate-200'>
-      <Header />
-      <main className='flex flex-grow items-stretch justify-center p-6'>
+    <div className='flex min-h-screen flex-col'>
+      <main className='flex-1'>
         {children}
       </main>
       <Footer />

@@ -1,0 +1,371 @@
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { motion } from "motion/react";
+import { AuthRedirectWrapper } from '@/wrappers';
+import { useGetAccountInfo, useGetIsLoggedIn } from '@/lib';
+import { smartContractService, FarmInfo, UserFarmInfo, UserRewardsInfo } from '@/lib/smartContractService';
+
+const StakingRoomsPage = () => {
+  const isLoggedIn = useGetIsLoggedIn();
+  const { address } = useGetAccountInfo();
+  const [farms, setFarms] = useState<FarmInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
+  const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
+  // const [multifarmRewardsLeft, setMultifarmRewardsLeft] = useState<any[]>([]); // Removed unused state
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch all farms data
+        const farmsData = await smartContractService.getAllFarms();
+        setFarms(farmsData);
+
+        // Fetch user-specific data if logged in
+        if (isLoggedIn && address) {
+          try {
+            const userFarmsData = await smartContractService.getUserFarmInfo(address);
+            setUserFarms(userFarmsData);
+
+            const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+            setUserRewards(userRewardsData);
+          } catch (userError) {
+            console.error('Error fetching user data:', userError);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching farms data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch farms data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [isLoggedIn, address]);
+
+  // Helper function to format balance
+  const formatBalance = (balance: string, decimals: number = 18): string => {
+    try {
+      const num = parseFloat(balance) / Math.pow(10, decimals);
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(2) + 'M';
+      } else if (num >= 1000) {
+        return (num / 1000).toFixed(2) + 'K';
+      } else {
+        return num.toFixed(2);
+      }
+    } catch {
+      return '0';
+    }
+  };
+
+  // Helper function to get user staked balance for a specific farm
+  const getUserStakedBalance = (farmId: string): string => {
+    const userFarm = userFarms.find(uf => uf.farmId === farmId);
+    return userFarm ? userFarm.stakedBalance : '0';
+  };
+
+  // Helper function to get user harvestable rewards for a specific farm
+  const getUserHarvestableRewards = (farmId: string): string => {
+    const userReward = userRewards.find(ur => ur.farmId === farmId);
+    return userReward ? userReward.harvestableAmount : '0';
+  };
+
+  // Simplified APR calculation
+  const calculateAPR = (farm: FarmInfo): number => {
+    try {
+      const totalStaked = parseFloat(farm.totalStaked) / Math.pow(10, 18);
+      const totalRewards = parseFloat(farm.totalRewards) / Math.pow(10, 18);
+      
+      if (totalStaked === 0) return 0;
+      
+      // Simple APR calculation (annualized)
+      const apr = (totalRewards / totalStaked) * 100 * 365;
+      return Math.min(apr, 999); // Cap at 999%
+    } catch {
+      return 0;
+    }
+  };
+
+  // Get unique color for each farm
+  const getFarmColor = (farmId: string): string => {
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+      '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+    ];
+    const index = parseInt(farmId) % colors.length;
+    return colors[index];
+  };
+
+  return (
+    <AuthRedirectWrapper requireAuth={false}>
+      <div className="min-h-screen bg-black">
+        {/* Header */}
+        <div className="bg-black/90 backdrop-blur-md border-b-2 border-purple-500/50 shadow-2xl">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="text-center">
+              <motion.h1
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-purple-500 font-mono mb-2 tracking-wider"
+                style={{ 
+                  textShadow: '0 0 10px #8A2BE2, 0 0 20px #8A2BE2',
+                  letterSpacing: '0.2em'
+                }}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                STAKING ROOMS
+              </motion.h1>
+              <motion.p
+                className="text-lg text-gray-400 font-mono tracking-wide"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                Single token staking pools
+              </motion.p>
+              <motion.div
+                className="text-sm text-gray-500 mt-2 font-mono tracking-wide"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+              >
+                {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Connection Status */}
+          {!isLoggedIn && (
+            <div className="mb-8">
+              <motion.div
+                className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/50 rounded-lg p-6 text-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <h3 className="text-xl font-bold text-purple-400 font-mono mb-2 tracking-wide">
+                  Connect Your Wallet
+                </h3>
+                <p className="text-gray-300 font-mono tracking-wide">
+                  Connect your wallet to view real-time staking data and interact with the staking pools.
+                </p>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Smart Contract Farms */}
+          <div className="mb-8">
+            {loading && (
+              <div className="text-center py-8">
+                <div className="text-yellow-400 font-mono tracking-wide">Loading farms from blockchain...</div>
+              </div>
+            )}
+            
+            {error && (
+              <div className="text-center py-8">
+                <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <div className="text-red-400 font-mono tracking-wide mb-2">Smart Contract Error</div>
+                  <div className="text-gray-300 font-mono tracking-wide text-sm">{error}</div>
+                </div>
+              </div>
+            )}
+            
+            {!loading && !error && farms.length > 0 && (
+              <div className="bg-gray-900 border border-purple-500 rounded-lg p-6 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {/* Filter farms to show only NON-USDC farms and hide farm #43 */}
+                  {farms
+                    .filter(farm => !farm.stakingToken.includes('USDC'))
+                    .filter(farm => farm.farm.id !== '43')
+                    .map((farm, index) => {
+                    const farmColor = getFarmColor(farm.farm.id);
+                    return (
+                      <motion.div
+                        key={farm.farm.id}
+                        className="relative bg-gradient-to-b from-gray-900 to-black border-4 p-6 font-mono"
+                        style={{
+                          borderColor: farmColor,
+                          boxShadow: `0 0 20px ${farmColor}20, inset 0 0 20px ${farmColor}10`,
+                          imageRendering: 'pixelated',
+                          clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
+                        }}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: index * 0.1 }}
+                      >
+                        {/* Farm Header */}
+                        <div className="text-center mb-6">
+                          <h3 className="text-xl font-bold text-white font-mono mb-2 tracking-wide" style={{ 
+                            textShadow: `0 0 5px ${farmColor}`,
+                            letterSpacing: '0.1em'
+                          }}>
+                            Farm #{farm.farm.id}
+                          </h3>
+                          <div className="text-3xl font-bold font-mono tracking-wider" style={{ 
+                            color: farmColor,
+                            textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`,
+                            letterSpacing: '0.1em'
+                          }}>
+                            {calculateAPR(farm)}% APR
+                          </div>
+                          <div className="text-sm text-gray-400 font-mono tracking-wide mt-1">
+                            <div className="flex items-center justify-center space-x-2">
+                              {/* For single token staking, show staking token and reward token */}
+                              <img 
+                                src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
+                                alt={farm.stakingToken}
+                                className="w-6 h-6 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                              <span>/</span>
+                              {/* Show multiple reward tokens for multi-reward farms */}
+                              {farm.isMultiReward && farm.rewardTokens ? (
+                                <div className="flex space-x-1">
+                                  {farm.rewardTokens.map((token: string, index: number) => (
+                                    <img 
+                                      key={index}
+                                      src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
+                                      alt={token}
+                                      className="w-6 h-6 rounded-full"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              ) : (
+                                <img 
+                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.farm.reward_token}/icon.png`}
+                                  alt={farm.farm.reward_token}
+                                  className="w-6 h-6 rounded-full"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Farm Stats */}
+                        <div className="space-y-3 mb-6">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
+                            <span className="text-white font-mono tracking-wide">
+                              {farm.totalStakedUSD && farm.totalStakedUSD > 0 
+                                ? `$${farm.totalStakedUSD.toFixed(2)}` 
+                                : formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)
+                              }
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
+                            <span className="text-white font-mono tracking-wide">
+                              {formatBalance(getUserStakedBalance(farm.farm.id), farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
+                            <span className="text-yellow-400 font-mono tracking-wide">
+                              {formatBalance(getUserHarvestableRewards(farm.farm.id), farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400 font-mono tracking-wide">Status:</span>
+                            <span className={`font-mono tracking-wide ${farm.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                              {farm.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="space-y-3">
+                          <button
+                            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors font-mono border-2 border-green-500 tracking-wide"
+                            style={{ imageRendering: 'pixelated' }}
+                          >
+                            STAKE
+                          </button>
+                          <button
+                            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors font-mono border-2 border-red-500 tracking-wide"
+                            style={{ imageRendering: 'pixelated' }}
+                          >
+                            UNSTAKE
+                          </button>
+                          <button
+                            className="w-full py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition-colors font-mono border-2 border-yellow-500 tracking-wide"
+                            style={{ imageRendering: 'pixelated' }}
+                          >
+                            HARVEST
+                          </button>
+                        </div>
+
+                        {/* Pixel Art Border Effect */}
+                        <div
+                          className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                          style={{
+                            background: `repeating-linear-gradient(
+                              0deg,
+                              transparent,
+                              transparent 2px,
+                              ${farmColor}20 2px,
+                              ${farmColor}20 4px
+                            )`,
+                            boxShadow: `0 0 30px ${farmColor}40, inset 0 0 20px ${farmColor}20`
+                          }}
+                        />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                
+                {/* Enter Elevator Button */}
+                <div className="text-center mt-8">
+                  <motion.button
+                    onClick={() => window.location.href = '/motel'}
+                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300 transform hover:scale-105"
+                    style={{
+                      boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
+                      textShadow: '0 0 10px rgba(147, 51, 234, 0.8)',
+                      imageRendering: 'pixelated'
+                    }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                    whileHover={{
+                      boxShadow: '0 0 30px rgba(147, 51, 234, 0.7), 0 0 60px rgba(147, 51, 234, 0.5)',
+                      scale: 1.05
+                    }}
+                  >
+                    ENTER ELEVATOR
+                  </motion.button>
+                </div>
+              </div>
+            )}
+
+            {!loading && !error && farms.length === 0 && (
+              <div className="text-center py-8">
+                <div className="text-gray-400 font-mono tracking-wide">No farms found in the smart contract.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </AuthRedirectWrapper>
+  );
+};
+
+export default StakingRoomsPage;

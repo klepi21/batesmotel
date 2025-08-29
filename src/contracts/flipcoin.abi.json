@@ -1,0 +1,759 @@
+{
+    "buildInfo": {
+        "rustc": {
+            "version": "1.86.0",
+            "commitHash": "05f9846f893b09a1be1fc8560e33fc3c815cfecb",
+            "commitDate": "2025-03-31",
+            "channel": "Stable",
+            "short": "rustc 1.86.0 (05f9846f8 2025-03-31)"
+        },
+        "contractCrate": {
+            "name": "flipcoin",
+            "version": "0.1.0"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.55.0"
+        }
+    },
+    "name": "FlipcoinSc",
+    "constructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "upgradeConstructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "docs": [
+                "Receives a payment and creates a number of games.",
+                "",
+                "Parameters:",
+                "- `number_of_games`: The number of games to create."
+            ],
+            "name": "create",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "number_of_games",
+                    "type": "u64"
+                },
+                {
+                    "name": "side",
+                    "type": "u8"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Cancels a game.",
+                "",
+                "Parameters:",
+                "- `game_id`: The game's unique identifier."
+            ],
+            "name": "cancel",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "id",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Force-cancel a game.",
+                "",
+                "Parameters:",
+                "- `game_id`: The game's unique identifier."
+            ],
+            "name": "forceCancel",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "id",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Accepts a payment and joins a game.",
+                "",
+                "Parameters:",
+                "- `game_id`: The game's unique identifier."
+            ],
+            "name": "join",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "id",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Returns all WL tokens and amounts.",
+                "",
+                "The returned type is a MultiValueEncoded of WhitelistedToken Structure, which contains the following fields:",
+                "- `token`: The token's identifier",
+                "- `amount`: The amount of the token"
+            ],
+            "name": "getWhitelistedTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<WhitelistedToken>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Returns all the games played from the latest to the oldest.",
+                "",
+                "Optional arguments:",
+                "- `opt_only_active`: If set true, only returns the games that are still open. Otherwise, returns all games.",
+                "- `opt_creator`: If set, only returns the games created by the specified player. Otherwise, returns all games.",
+                "",
+                "The returned type is a Game Structure, which contains the following fields:",
+                "- `id`: The game's unique identifier",
+                "- `creator`: The player who created the game",
+                "- `rival`: The player who accepted the game. If None, the game is still open.",
+                "- `token`: The token used in the game",
+                "- `amount`: The amount of the token used in the game",
+                "- `winner`: The player who won the game. If None, the game is still open.",
+                "- `timestamp`: The timestamp when the game was created"
+            ],
+            "name": "getGames",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "opt_only_active",
+                    "type": "optional<bool>",
+                    "multi_arg": true
+                },
+                {
+                    "name": "opt_creator",
+                    "type": "optional<Address>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<Game>",
+                    "multi_result": true
+                }
+            ],
+            "allow_multiple_var_args": true
+        },
+        {
+            "docs": [
+                "Returns the scoreboard.",
+                "",
+                "The returned type is a MultiValueEncoded of PlayerScore Structure, which contains the following fields:",
+                "- `address`: The player's address",
+                "- `wins`: The number of wins",
+                "- `losses`: The number of losses"
+            ],
+            "name": "getScoreboard",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "k",
+                    "type": "bytes"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<PlayerScore>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getId",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getWinner",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "id",
+                    "type": "u64"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "Address"
+                }
+            ]
+        },
+        {
+            "name": "addTokens",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "tokens",
+                    "type": "variadic<EgldOrEsdtTokenIdentifier>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "removeTokens",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "tokens",
+                    "type": "variadic<EgldOrEsdtTokenIdentifier>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "getTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<EgldOrEsdtTokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "setMinimumAmount",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "clearMinimumAmounts",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "tokens",
+                    "type": "variadic<EgldOrEsdtTokenIdentifier>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "withdraw",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                },
+                {
+                    "name": "nonce",
+                    "type": "u64"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setState",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "new_state",
+                    "type": "State"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "getState",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "State"
+                }
+            ]
+        },
+        {
+            "name": "setEarner",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                },
+                {
+                    "name": "percentage",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "removeEarner",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "getEarners",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<multi<Address,u64>>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "addVotingManagers",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "voting_managers",
+                    "type": "variadic<Address>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "removeVotingManagers",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "voting_managers",
+                    "type": "variadic<Address>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "addVotingCost",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "removeVotingCost",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Adds a new voting option."
+            ],
+            "name": "addVotingOption",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Starts a new voting session."
+            ],
+            "name": "startVoting",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "voting_options",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Ends the current voting session."
+            ],
+            "name": "endVoting",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Receives a payment in order to vote for a specific option.",
+                "",
+                "Parameters:",
+                "- option: u64 - The option to vote for. (excluding 0)",
+                "- opt_num_votes: OptionalValue<u64> - The number of votes to cast. (default is 1)"
+            ],
+            "name": "vote",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "option",
+                    "type": "u64"
+                },
+                {
+                    "name": "opt_num_votes",
+                    "type": "optional<u64>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Returns all votes for each option.",
+                "",
+                "The returned type is a MultiValueEncoded of Votes Structure, which contains the following fields:",
+                "- option: u64",
+                "- total_votes: u64"
+            ],
+            "name": "getAllVotes",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<Votes>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Adds a new voting option."
+            ],
+            "name": "addTokenVotingOption",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Starts a new voting session."
+            ],
+            "name": "startTokenVoting",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "voting_options",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Ends the current voting session."
+            ],
+            "name": "endTokenVoting",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Receives a payment in order to vote for a specific option.",
+                "",
+                "Parameters:",
+                "- option: u64 - The option to vote for. (excluding 0)",
+                "- opt_num_votes: OptionalValue<u64> - The number of votes to cast. (default is 1)"
+            ],
+            "name": "voteToken",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "option",
+                    "type": "u64"
+                },
+                {
+                    "name": "opt_num_votes",
+                    "type": "optional<u64>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Returns all votes for each option.",
+                "",
+                "The returned type is a MultiValueEncoded of Votes Structure, which contains the following fields:",
+                "- option: u64",
+                "- total_votes: u64"
+            ],
+            "name": "getAllTokenVotes",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<Votes>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "setToken",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setAmount",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Deposits the amount of the token to the faucet."
+            ],
+            "name": "deposit",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Claims the amount of the token from the faucet.",
+                "",
+                "Requirements:",
+                "- The faucet is fully set up.",
+                "- The faucet has enough balance.",
+                "- The caller has not claimed in this epoch."
+            ],
+            "name": "claim",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Returns:",
+                "",
+                "- The token of the faucet.",
+                "- The amount of the token.",
+                "- Whether the faucet has enough balance.",
+                "- Whether the caller can claim."
+            ],
+            "name": "getFaucetInfo",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "FaucetInfo"
+                }
+            ]
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {
+        "FaucetInfo": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "has_enough_balance",
+                    "type": "bool"
+                },
+                {
+                    "name": "can_claim",
+                    "type": "bool"
+                }
+            ]
+        },
+        "Game": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "u64"
+                },
+                {
+                    "name": "creator",
+                    "type": "Address"
+                },
+                {
+                    "name": "rival",
+                    "type": "Option<Address>"
+                },
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "side",
+                    "type": "u8"
+                },
+                {
+                    "name": "winner",
+                    "type": "Option<Address>"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64"
+                }
+            ]
+        },
+        "PlayerScore": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                },
+                {
+                    "name": "wins",
+                    "type": "u64"
+                },
+                {
+                    "name": "losses",
+                    "type": "u64"
+                }
+            ]
+        },
+        "State": {
+            "type": "enum",
+            "variants": [
+                {
+                    "name": "Paused",
+                    "discriminant": 0
+                },
+                {
+                    "name": "Active",
+                    "discriminant": 1
+                }
+            ]
+        },
+        "Votes": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "option",
+                    "type": "u64"
+                },
+                {
+                    "name": "total_votes",
+                    "type": "u64"
+                }
+            ]
+        },
+        "WhitelistedToken": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ]
+        }
+    }
+}

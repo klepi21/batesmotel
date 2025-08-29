@@ -8,12 +8,30 @@ export default function Unlock() {
   const router = useRouter();
   const { isLoggedIn } = useGetLoginInfo();
 
+  // Check if user came from specific pages
+  const isFromFaucet = typeof window !== 'undefined' && window.location.search.includes('from=faucet');
+  const isFromLobby = typeof window !== 'undefined' && window.location.search.includes('from=lobby');
+
   const unlockPanelManager = UnlockPanelManager.init({
     loginHandler: () => {
-      router.push(RouteNamesEnum.dashboard);
+      // Redirect back to the page they came from
+      if (isFromFaucet) {
+        router.push(RouteNamesEnum.faucet);
+      } else if (isFromLobby) {
+        router.push(RouteNamesEnum.home);
+      } else {
+        router.push(RouteNamesEnum.home);
+      }
     },
     onClose: () => {
-      router.replace(RouteNamesEnum.home);
+      // Redirect back to the page they came from
+      if (isFromFaucet) {
+        router.replace(RouteNamesEnum.faucet);
+      } else if (isFromLobby) {
+        router.replace(RouteNamesEnum.home);
+      } else {
+        router.replace(RouteNamesEnum.home);
+      }
     }
   });
 
@@ -23,7 +41,7 @@ export default function Unlock() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      router.replace(RouteNamesEnum.dashboard);
+      router.replace(RouteNamesEnum.home);
       return;
     }
 

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import type { PropsWithChildren } from 'react';
 import { useGetIsLoggedIn } from '@/lib';
 import { RouteNamesEnum } from '@/localConstants';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface AuthRedirectWrapperPropsType extends PropsWithChildren {
   requireAuth?: boolean;
@@ -14,16 +14,14 @@ export const AuthRedirectWrapper = ({
   requireAuth = true
 }: AuthRedirectWrapperPropsType) => {
   const isLoggedIn = useGetIsLoggedIn();
+  const router = useRouter();
 
   useEffect(() => {
-    if (isLoggedIn && !requireAuth) {
-      redirect(RouteNamesEnum.dashboard);
-    }
-
+    // Only redirect if user is not logged in and auth is required
     if (!isLoggedIn && requireAuth) {
-      redirect(RouteNamesEnum.home);
+      router.push(RouteNamesEnum.home);
     }
-  }, [isLoggedIn, requireAuth]);
+  }, [isLoggedIn, requireAuth, router]);
 
   return <>{children}</>;
 };

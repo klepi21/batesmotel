@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import './styles/globals.css';
 
-import { walletConnectV2ProjectId } from './config';
+import { walletConnectV2ProjectId, environment } from './config';
 
 import { InMemoryProvider } from './provider/inMemoryProvider';
 import {
@@ -9,7 +9,7 @@ import {
   ICustomProvider,
   ProviderTypeEnum,
   InitAppType,
-  EnvironmentsEnum,
+  // EnvironmentsEnum, // Removed unused import
   ProviderType
 } from '@/lib';
 
@@ -40,9 +40,9 @@ export const config: InitAppType = {
   storage: { getStorageCallback: () => sessionStorage },
   dAppConfig: {
     nativeAuth: true,
-    environment: EnvironmentsEnum.devnet,
+    environment,
     network: {
-      walletAddress: 'https://devnet-wallet.multiversx.com'
+      walletAddress: 'https://wallet.multiversx.com'
     },
     providers: {
       walletConnect: {
