@@ -259,17 +259,17 @@ const BatesMotel3D = () => {
                       title="Click to visit Faucet"
                     />
                     
-                    {/* Clickable Right Area (30%) - Game20.gr */}
+                    {/* Clickable Right Area (30%) - Game Room */}
                     <div 
                       className="absolute right-0 top-0 w-[30%] h-full cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50"
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Right area clicked - opening Game20.gr');
-                        window.open('https://game20.gr', '_blank');
+                        console.log('Right area clicked - navigating to game room');
+                        router.push(RouteNamesEnum.gameroom);
                       }}
-                      title="Click to visit Game20.gr"
+                      title="Click to enter Game Room"
                     />
                   </>
                 )}

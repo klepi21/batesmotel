@@ -265,44 +265,17 @@ export default function FaucetPage() {
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12">
                   {/* Left Column */}
                   <div className="flex flex-col items-center justify-center">
-                    {/* UFO Asset */}
+                    {/* Faucet Image */}
                     <div className="w-48 h-48 relative mb-8">
-                      <div className="w-full h-full bg-gradient-to-b from-gray-800 to-gray-900 border-4 border-pink-500/50 flex items-center justify-center relative"
+                      <div className="w-full h-full border-4 border-pink-500/50 flex items-center justify-center relative overflow-hidden"
                            style={{
                              clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                            }}>
-                        {/* UFO Body */}
-                        <div className="w-32 h-16 bg-gradient-to-r from-gray-300 to-gray-400 relative"
-                             style={{
-                               clipPath: 'polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px))'
-                             }}>
-                          {/* UFO Dome */}
-                          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-20 h-8 bg-gradient-to-r from-blue-300 to-blue-400"
-                               style={{
-                                 clipPath: 'polygon(0 0, calc(100% - 3px) 0, 100% 3px, 100% 100%, 3px 100%, 0 calc(100% - 3px))'
-                               }}></div>
-                          {/* UFO Lights */}
-                          <div className="absolute -bottom-1 left-2 w-2 h-2 bg-blue-400 animate-pulse"
-                               style={{
-                                 clipPath: 'polygon(0 0, calc(100% - 1px) 0, 100% 1px, 100% 100%, 1px 100%, 0 calc(100% - 1px))'
-                               }}></div>
-                          <div className="absolute -bottom-1 right-2 w-2 h-2 bg-blue-400 animate-pulse" 
-                               style={{
-                                 animationDelay: '0.5s',
-                                 clipPath: 'polygon(0 0, calc(100% - 1px) 0, 100% 1px, 100% 100%, 1px 100%, 0 calc(100% - 1px))'
-                               }}></div>
-                          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-400 animate-pulse" 
-                               style={{
-                                 animationDelay: '1s',
-                                 clipPath: 'polygon(0 0, calc(100% - 1px) 0, 100% 1px, 100% 100%, 1px 100%, 0 calc(100% - 1px))'
-                               }}></div>
-                        </div>
-                        
-                        {/* Beam of Light */}
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-16 bg-gradient-to-b from-green-400/60 to-transparent blur-sm animate-pulse"
-                             style={{
-                               clipPath: 'polygon(0 0, calc(100% - 2px) 0, 100% 2px, 100% 100%, 2px 100%, 0 calc(100% - 2px))'
-                             }}></div>
+                        <img 
+                          src="/assets/img/image.png" 
+                          alt="Faucet Token"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       
                       {/* Glow Effect */}

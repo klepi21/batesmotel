@@ -2,7 +2,13 @@ import {
   ApiNetworkProvider, 
   SmartContractController, 
   Address,
-  AbiRegistry
+  AbiRegistry,
+  Transaction,
+  GasLimit,
+  ContractFunction,
+  U64Value,
+  BigUIntValue,
+  TokenTransfer
 } from '@multiversx/sdk-core';
 
 // Farms contract address
@@ -549,6 +555,105 @@ export class SmartContractService {
     } catch (error) {
       console.error('Error calling multifarmRewardTokens:', error);
       return [];
+    }
+  }
+
+  // Transaction methods for staking functionality
+  createStakeTransaction(farmId: string, amount: string, stakingToken: string, userAddress: string, chainId: string = '1'): Transaction {
+    console.log('Creating stake transaction:', { farmId, amount, stakingToken, userAddress });
+    
+    // Convert amount to BigInt (assuming 18 decimals for most tokens, 6 for LOKD)
+    const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+    const tokenAmount = BigInt(parseFloat(amount) * Math.pow(10, decimals));
+    
+    // Create ESDT transfer data
+    const tokenIdentifierHex = Buffer.from(stakingToken).toString('hex');
+    const amountHex = tokenAmount.toString(16).padStart(64, '0');
+    const functionName = Buffer.from('stake').toString('hex');
+    const farmIdHex = BigInt(farmId).toString(16).padStart(64, '0');
+    
+    const data = `ESDTTransfer@${tokenIdentifierHex}@${amountHex}@${functionName}@${farmIdHex}`;
+    
+    return new Transaction({
+      sender: new Address(userAddress),
+      receiver: this.contractAddress,
+      value: BigInt(0),
+      data: new Uint8Array(Buffer.from(data)),
+      gasLimit: BigInt(10000000), // 10M gas limit
+      chainID: chainId
+    });
+  }
+
+  createUnstakeTransaction(farmId: string, amount: string, userAddress: string, chainId: string = '1'): Transaction {
+    console.log('Creating unstake transaction:', { farmId, amount, userAddress });
+    
+    // Convert amount to BigInt (18 decimals for most tokens)
+    const tokenAmount = BigInt(parseFloat(amount) * Math.pow(10, 18));
+    
+    const functionName = Buffer.from('unstake').toString('hex');
+    const farmIdHex = BigInt(farmId).toString(16).padStart(64, '0');
+    const amountHex = tokenAmount.toString(16).padStart(64, '0');
+    
+    const data = `${functionName}@${farmIdHex}@${amountHex}`;
+    
+    return new Transaction({
+      sender: new Address(userAddress),
+      receiver: this.contractAddress,
+      value: BigInt(0),
+      data: new Uint8Array(Buffer.from(data)),
+      gasLimit: BigInt(8000000), // 8M gas limit
+      chainID: chainId
+    });
+  }
+
+  createHarvestTransaction(farmId: string, userAddress: string, chainId: string = '1'): Transaction {
+    console.log('Creating harvest transaction:', { farmId, userAddress });
+    
+    const functionName = Buffer.from('harvest').toString('hex');
+    const farmIdHex = BigInt(farmId).toString(16).padStart(64, '0');
+    
+    const data = `${functionName}@${farmIdHex}`;
+    
+    return new Transaction({
+      sender: new Address(userAddress),
+      receiver: this.contractAddress,
+      value: BigInt(0),
+      data: new Uint8Array(Buffer.from(data)),
+      gasLimit: BigInt(6000000), // 6M gas limit
+      chainID: chainId
+    });
+  }
+
+  // Helper method to get user's harvestable rewards for a specific farm
+  async calcHarvestableRewards(userAddress: string, farmId: string): Promise<string> {
+    try {
+      console.log('Calling calcHarvestableRewards for address:', userAddress, 'farm:', farmId);
+      
+      const query = this.controller.createQuery({
+        contract: this.contractAddress,
+        function: 'calcHarvestableRewards',
+        arguments: [userAddress, farmId]
+      });
+
+      const response = await this.controller.runQuery(query);
+      const [result] = this.controller.parseQueryResponse(response);
+      
+      console.log('Harvestable rewards result:', result);
+
+      // The result should be a list of token/amount pairs
+      if (result && Array.isArray(result) && result.length > 0) {
+        // For single reward farms, take the first amount
+        const firstReward = result[0];
+        if (firstReward && typeof firstReward === 'object') {
+          return firstReward.field1?.toString() || '0';
+        }
+      }
+
+      return '0';
+      
+    } catch (error) {
+      console.error('Error calling calcHarvestableRewards:', error);
+      return '0';
     }
   }
 }

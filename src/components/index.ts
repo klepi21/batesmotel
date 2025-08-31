@@ -10,3 +10,4 @@ export * from './TransactionsTable';
 export * from './ui/demo';
 export * from './ui/gradient-button';
 export * from './ui/status-dot';
+export * from './ui/staking-modal';

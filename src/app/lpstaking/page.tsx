@@ -2,51 +2,60 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
-import { useGetAccountInfo, useGetIsLoggedIn } from '@/lib';
+import { useGetAccountInfo, useGetIsLoggedIn, useGetNetworkConfig, UnlockPanelManager } from '@/lib';
 import { AuthRedirectWrapper } from '@/wrappers';
-// import { RouteNamesEnum } from '@/localConstants'; // Removed unused import
 import { smartContractService, FarmInfo, UserFarmInfo, UserRewardsInfo } from '@/lib/smartContractService';
+import { StakingModal } from '@/components/ui/staking-modal';
+import { signAndSendTransactions } from '@/helpers';
+import { toast } from 'sonner';
+import { Toaster } from 'sonner';
 
 const LpStakingPage = () => {
   const { address } = useGetAccountInfo();
   const isLoggedIn = useGetIsLoggedIn();
+  const { network } = useGetNetworkConfig();
   const [farms, setFarms] = useState<FarmInfo[]>([]);
   const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
   const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
-  // const [multifarmRewardsLeft, setMultifarmRewardsLeft] = useState<MultiFarmRewardsLeft[]>([]); // Removed unused state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Modal states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'stake' | 'unstake'>('stake');
+  const [selectedFarm, setSelectedFarm] = useState<FarmInfo | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all farms
+      const farmsData = await smartContractService.getAllFarms();
+      setFarms(farmsData);
+
+      // Fetch user-specific data if logged in
+      if (isLoggedIn && address) {
+        try {
+          const userFarmsData = await smartContractService.getUserFarmInfo(address);
+          setUserFarms(userFarmsData);
+
+          const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+          setUserRewards(userRewardsData);
+        } catch (userError) {
+          console.error('Error fetching user data:', userError);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching farms data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch farms data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch all farms
-        const farmsData = await smartContractService.getAllFarms();
-        setFarms(farmsData);
-
-        // Fetch user-specific data if logged in
-        if (isLoggedIn && address) {
-          const [userFarmsData, userRewardsData] = await Promise.all([
-            smartContractService.getUserFarmInfo(address),
-            smartContractService.getUserRewardsInfo(address)
-          ]);
-
-          setUserFarms(userFarmsData);
-          setUserRewards(userRewardsData);
-        }
-
-      } catch (err) {
-        console.error('Error fetching farm data:', err);
-        setError('Failed to load farm data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllData();
+    fetchData();
   }, [isLoggedIn, address]);
 
   // Helper function to format balance
@@ -88,9 +97,110 @@ const LpStakingPage = () => {
     return colors[index];
   };
 
+  // Handler functions for staking actions
+  const handleStakeClick = (farm: FarmInfo) => {
+    if (!isLoggedIn) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+    setSelectedFarm(farm);
+    setModalType('stake');
+    setModalOpen(true);
+  };
+
+  const handleUnstakeClick = (farm: FarmInfo) => {
+    if (!isLoggedIn) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+    
+    const stakedBalance = getUserStakedBalance(farm.farm.id);
+    if (parseFloat(stakedBalance) <= 0) {
+      toast.error('No tokens staked in this farm');
+      return;
+    }
+    
+    setSelectedFarm(farm);
+    setModalType('unstake');
+    setModalOpen(true);
+  };
+
+  const handleHarvestClick = async (farm: FarmInfo) => {
+    if (!isLoggedIn || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      // Check harvestable rewards
+      const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
+      const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
+      
+      if (harvestableNum <= 0) {
+        toast.error('No rewards available to harvest');
+        return;
+      }
+
+      const transaction = smartContractService.createHarvestTransaction(
+        farm.farm.id,
+        address,
+        network.chainId
+      );
+
+      const { sessionId } = await signAndSendTransactions({
+        transactions: [transaction],
+        transactionsDisplayInfo: {
+          processingMessage: 'Processing harvest transaction',
+          errorMessage: 'Error during harvest',
+          successMessage: 'Successfully harvested rewards!'
+        }
+      });
+
+      if (sessionId) {
+        toast.success('Harvest transaction submitted successfully!');
+        // Refresh data after successful harvest
+        await fetchData();
+      }
+    } catch (error) {
+      console.error('Error during harvest:', error);
+      toast.error('Failed to harvest rewards');
+    }
+  };
+
+  const handleModalSuccess = async () => {
+    // Refresh data after successful transaction
+    await fetchData();
+  };
+
+  // Wallet connection handler
+  const handleConnectWallet = () => {
+    const unlockPanelManager = UnlockPanelManager.init({
+      loginHandler: () => {
+        console.log('User logged in successfully');
+        // Data will be refreshed automatically via useEffect dependency on isLoggedIn
+      },
+      onClose: () => {
+        console.log('Unlock panel closed');
+      }
+    });
+    
+    unlockPanelManager.openUnlockPanel();
+  };
+
   return (
     <AuthRedirectWrapper requireAuth={false}>
       <div className="min-h-screen bg-black">
+        <Toaster 
+          theme="dark" 
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: '#1A1A1A',
+              border: '1px solid rgba(147, 51, 234, 0.3)',
+              color: 'white',
+            },
+          }}
+        />
         {/* Header */}
         <div className="bg-black/90 backdrop-blur-md border-b-2 border-purple-500/50 shadow-2xl">
           <div className="max-w-7xl mx-auto px-4 py-4">
@@ -141,9 +251,25 @@ const LpStakingPage = () => {
                 <h3 className="text-xl font-bold text-purple-400 font-mono mb-2 tracking-wide">
                   Connect Your Wallet
                 </h3>
-                <p className="text-gray-300 font-mono tracking-wide">
+                <p className="text-gray-300 font-mono tracking-wide mb-4">
                   Connect your wallet to view real-time staking data and interact with the smart contract.
                 </p>
+                <motion.button
+                  onClick={handleConnectWallet}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300"
+                  style={{
+                    boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
+                    textShadow: '0 0 10px rgba(147, 51, 234, 0.8)',
+                    imageRendering: 'pixelated'
+                  }}
+                  whileHover={{
+                    boxShadow: '0 0 30px rgba(147, 51, 234, 0.7), 0 0 60px rgba(147, 51, 234, 0.5)',
+                    scale: 1.05
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  CONNECT WALLET
+                </motion.button>
               </motion.div>
             </div>
           )}
@@ -339,18 +465,21 @@ const LpStakingPage = () => {
                         {/* Action Buttons */}
                         <div className="space-y-3">
                           <button
+                            onClick={() => handleStakeClick(farm)}
                             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors font-mono border-2 border-green-500 tracking-wide"
                             style={{ imageRendering: 'pixelated' }}
                           >
                             STAKE
                           </button>
                           <button
+                            onClick={() => handleUnstakeClick(farm)}
                             className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors font-mono border-2 border-red-500 tracking-wide"
                             style={{ imageRendering: 'pixelated' }}
                           >
                             UNSTAKE
                           </button>
                           <button
+                            onClick={() => handleHarvestClick(farm)}
                             className="w-full py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition-colors font-mono border-2 border-yellow-500 tracking-wide"
                             style={{ imageRendering: 'pixelated' }}
                           >
@@ -408,6 +537,19 @@ const LpStakingPage = () => {
             )}
           </div>
         </div>
+
+        {/* Staking Modal */}
+        {selectedFarm && (
+          <StakingModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            modalType={modalType}
+            farmId={selectedFarm.farm.id}
+            stakingToken={selectedFarm.stakingToken}
+            userStakedBalance={getUserStakedBalance(selectedFarm.farm.id)}
+            onSuccess={handleModalSuccess}
+          />
+        )}
       </div>
     </AuthRedirectWrapper>
   );

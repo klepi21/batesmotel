@@ -4,5 +4,6 @@ export enum RouteNamesEnum {
   logout = '/logout',
   stakingrooms = '/stakingrooms',
   lpstaking = '/lpstaking',
-  faucet = '/faucet'
+  faucet = '/faucet',
+  gameroom = '/game-room'
 }

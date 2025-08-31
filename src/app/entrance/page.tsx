@@ -18,7 +18,7 @@ const EntrancePage = () => {
     >
       {/* Background Image */}
       <Image
-        src="/assets/img/Entrance.png"
+        src="/assets/img/1stLobby.png"
         alt="Bates Motel Entrance"
         fill
         className="object-contain object-center"
@@ -29,10 +29,10 @@ const EntrancePage = () => {
       <div className="absolute inset-0 bg-black bg-opacity-20"></div>
       
       {/* Click to Enter Text */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center py-4">
         <div className="text-center text-white">
 
-          <p className="text-xl md:text-2xl drop-shadow-lg animate-pulse">
+          <p className="text-xl md:text-2xl drop-shadow-lg animate-pulse pr-16">
             Click to Enter
           </p>
         </div>
