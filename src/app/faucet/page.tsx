@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-// import Image from "next/image"; // Removed unused import
+import Image from "next/image";
 import { useGetLoginInfo, useGetAccount, useGetNetworkConfig, Transaction, Address } from '@/lib';
 import { signAndSendTransactions } from '@/helpers';
 import { toast } from "sonner";
@@ -271,9 +271,11 @@ export default function FaucetPage() {
                            style={{
                              clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
                            }}>
-                        <img 
+                        <Image 
                           src="/assets/img/image.png" 
                           alt="Faucet Token"
+                          width={400}
+                          height={400}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -288,9 +290,11 @@ export default function FaucetPage() {
                         <h3 className="text-xl font-bold text-white flex items-center justify-center gap-2 roboto-condensed-bold">
                           <span className="text-pink-400">{Number(faucetInfo.amount) / (10 ** 18)}</span>
                           <span className="flex items-center gap-1">
-                            <img 
+                            <Image 
                               src="https://tools.multiversx.com/assets-cdn/tokens/RARE-99e8b0/icon.png" 
                               alt="RARE" 
+                              width={24}
+                              height={24}
                               className="w-6 h-6"
                             />
                             RARE
@@ -486,11 +490,13 @@ export default function FaucetPage() {
                     <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2 roboto-condensed-bold">
                       Admin Deposit
                       <span className="flex items-center gap-1">
-                        <img 
-                          src="https://tools.multiversx.com/assets-cdn/tokens/RARE-99e8b0/icon.png" 
-                          alt="RARE" 
-                          className="w-5 h-5"
-                        />
+                                                    <Image 
+                              src="https://tools.multiversx.com/assets-cdn/tokens/RARE-99e8b0/icon.png" 
+                              alt="RARE" 
+                              width={20}
+                              height={20}
+                              className="w-5 h-5"
+                            />
                       </span>
                     </h3>
                     <div className="flex gap-4">

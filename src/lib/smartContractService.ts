@@ -1,14 +1,9 @@
-import { 
-  ApiNetworkProvider, 
-  SmartContractController, 
+import {
+  ApiNetworkProvider,
+  SmartContractController,
   Address,
   AbiRegistry,
-  Transaction,
-  GasLimit,
-  ContractFunction,
-  U64Value,
-  BigUIntValue,
-  TokenTransfer
+  Transaction
 } from '@multiversx/sdk-core';
 
 // Farms contract address
