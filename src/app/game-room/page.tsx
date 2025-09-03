@@ -31,7 +31,7 @@ const GameRoomPage = () => {
           src="/assets/img/mob/GameRoommob.png"
           alt="Game Room Mobile"
           fill
-          className="object-cover object-center block sm:hidden"
+          className="object-contain object-center block sm:hidden"
           priority
         />
         
@@ -72,8 +72,6 @@ const GameRoomPage = () => {
             <span className="relative z-10">← Return to Lobby</span>
           </motion.button>
         </motion.div>
-
-  in 
 
         {/* Floating particles effect */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">

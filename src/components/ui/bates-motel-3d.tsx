@@ -142,12 +142,12 @@ const BatesMotel3D = () => {
   ];
   
   // Calculate which floor should be active based on scroll
-  const floorProgress = useTransform(scrollYProgress, [0, 1], [floors.length, 1]);
+  const floorProgress = useTransform(scrollYProgress, [0, 1], [6, -1]);
 
   useEffect(() => {
     const unsubscribe = floorProgress.on("change", (latest) => {
-      const floorNumber = Math.ceil(latest);
-      setCurrentFloor(Math.max(0, Math.min(floors.length, floorNumber)));
+      const floorNumber = Math.round(latest);
+      setCurrentFloor(floorNumber);
     });
 
     return () => unsubscribe();
@@ -313,9 +313,9 @@ const BatesMotel3D = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-radial from-pink-500/20 via-pink-500/10 to-transparent opacity-30"></div>
                     
-                    {/* Clickable Left Area (30%) - Faucet */}
+                    {/* Clickable Left Area (35%) - Faucet */}
                     <div 
-                      className="absolute left-0 top-0 w-[30%] h-full cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+                      className="absolute left-0 top-1/2 transform -translate-y-1/2 w-[35%] h-3/4 cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50"
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
@@ -326,9 +326,9 @@ const BatesMotel3D = () => {
                       title="Click to visit Faucet"
                     />
                     
-                    {/* Clickable Right Area (30%) - Game Room */}
+                    {/* Clickable Right Area (35%) - Game Room */}
                     <div 
-                      className="absolute right-0 top-0 w-[30%] h-full cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[35%] h-3/4 cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50"
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
@@ -701,36 +701,11 @@ const BatesMotel3D = () => {
           ))}
         </div>
 
-        {/* Current Floor Indicator - Elevator Style */}
-        <motion.div
-          className="fixed top-16 md:top-18 lg:top-20 right-4 md:right-6 lg:right-8 z-40 bg-black/80 backdrop-blur-md border border-pink-500/30 rounded-lg p-2 md:p-3 lg:p-4"
-          initial={{ opacity: 0, x: 100 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="text-center">
-            <div className="text-xs md:text-sm text-gray-400 roboto-condensed-regular">ELEVATOR</div>
-            <div className="text-lg md:text-xl lg:text-2xl font-bold text-pink-500 roboto-condensed-bold">{currentFloor === -1 ? "VAULT" : currentFloor === 0 ? "LOBBY" : currentFloor}</div>
-            <div className="text-xs text-gray-500 roboto-condensed-regular">
-              {floors.find(floor => floor.id === currentFloor)?.name}
-            </div>
-            {/* Elevator Direction Indicator */}
-            <motion.div
-              className="text-xs text-yellow-400 mt-1"
-              animate={{ 
-                opacity: [0.5, 1, 0.5],
-                scale: [1, 1.1, 1]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              {currentFloor === -1 ? "VAULT" : currentFloor === 0 ? "GROUND" : currentFloor === floors.length - 1 ? "TOP" : "MOVING"}
-            </motion.div>
-          </div>
-        </motion.div>
+
 
         {/* Clickable Elevator Number Pad */}
         <motion.div
-          className="fixed top-16 md:top-18 lg:top-20 right-20 md:right-28 lg:right-32 z-50 bg-black/80 backdrop-blur-md border border-pink-500/30 rounded-lg p-2 md:p-3 lg:p-4"
+          className="fixed top-16 md:top-18 lg:top-20 right-2 md:right-2 lg:right-4 z-50 bg-black/80 backdrop-blur-md border border-pink-500/30 rounded-lg p-2 md:p-3 lg:p-4"
           data-floor-select
           initial={{ opacity: 0, x: 100 }}
           animate={{ opacity: 1, x: 0 }}
