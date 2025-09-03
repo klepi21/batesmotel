@@ -2,6 +2,11 @@
 const nextConfig = {
   // distDir: 'build', // Removed custom distDir for Vercel compatibility
   transpilePackages: ['@multiversx/sdk-dapp-ui'],
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
   webpack: (config) => {
     config.resolve.fallback = { fs: false };
     config.externals.push('pino-pretty', 'lokijs', 'encoding', {

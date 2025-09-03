@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion } from "motion/react";
 import Image from 'next/image';
 import { useGetLoginInfo, useGetAccount } from '@/lib';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,6 @@ const BatesMotel3D = () => {
     }
     return false;
   });
-  const { scrollYProgress } = useScroll();
   const { isLoggedIn } = useGetLoginInfo();
   const { address } = useGetAccount();
   const router = useRouter();
