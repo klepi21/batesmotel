@@ -195,7 +195,20 @@ export default function FaucetPage() {
       <div className="relative h-screen overflow-hidden bg-black">
         {/* Background Pattern - Atmospheric Glow Effects */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black" />
+          {/* Mobile Background Image */}
+          <div className="absolute inset-0 sm:hidden -z-10">
+            <Image
+              src="/assets/img/mob/Entrancemob.png"
+              alt="Faucet Mobile Background"
+              fill
+              className="object-cover object-center"
+              priority
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-60"></div>
+          </div>
+          
+          {/* Desktop Background Pattern */}
+          <div className="absolute inset-0 hidden sm:block bg-gradient-to-b from-gray-900 to-black" />
           
           {/* Subtle grid pattern for floor texture */}
           <div className="absolute inset-0 opacity-10">

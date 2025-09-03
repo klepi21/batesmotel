@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from "motion/react";
+import Image from 'next/image';
 import { useGetAccountInfo, useGetIsLoggedIn, useGetNetworkConfig, UnlockPanelManager } from '@/lib';
 import { AuthRedirectWrapper } from '@/wrappers';
 import { smartContractService, FarmInfo, UserFarmInfo, UserRewardsInfo } from '@/lib/smartContractService';
@@ -189,7 +190,18 @@ const LpStakingPage = () => {
 
   return (
     <AuthRedirectWrapper requireAuth={false}>
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-black relative">
+        {/* Mobile Background Image */}
+        <div className="absolute inset-0 sm:hidden -z-10">
+          <Image
+            src="/assets/img/mob/LP Roommob.png"
+            alt="LP Staking Rooms Mobile Background"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-70"></div>
+        </div>
         <Toaster 
           theme="dark" 
           position="bottom-right"

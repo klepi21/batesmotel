@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from "motion/react";
+import Image from 'next/image';
 import { useGetLoginInfo, useGetAccount } from '@/lib';
 import { useRouter } from 'next/navigation';
 import { RouteNamesEnum } from '@/localConstants';
@@ -18,10 +19,39 @@ interface FloorData {
 
 const BatesMotel3D = () => {
   const [currentFloor, setCurrentFloor] = useState(1);
+  const [isMobile, setIsMobile] = useState(() => {
+    // Initialize with a reasonable default based on window size if available
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
   const { scrollYProgress } = useScroll();
   const { isLoggedIn } = useGetLoginInfo();
   const { address } = useGetAccount();
   const router = useRouter();
+  
+  // Check if device is mobile
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const isMobileDevice = window.innerWidth < 768;
+      setIsMobile(isMobileDevice);
+    };
+
+    // Check immediately
+    checkScreenSize();
+
+    // Add resize listener
+    window.addEventListener('resize', checkScreenSize);
+
+    // Force a check after a short delay to ensure it's correct
+    const timeoutId = setTimeout(checkScreenSize, 100);
+
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+      clearTimeout(timeoutId);
+    };
+  }, []);
   
   // Debug login state - removed to prevent rate limiting
   
@@ -188,9 +218,10 @@ const BatesMotel3D = () => {
         <div>
           {floors.map((floor) => (
             <motion.section
-              key={floor.id}
+              key={`${floor.id}-${isMobile ? 'mobile' : 'desktop'}`}
               className="relative h-screen flex items-center justify-center overflow-hidden cursor-pointer"
               data-floor={floor.id}
+              data-mobile={isMobile}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.8 }}
@@ -225,12 +256,30 @@ const BatesMotel3D = () => {
                 {floor.id === -1 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/The Vault.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/TheVaultmob.png"
+                          alt="The Vault Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/The Vault.png"
+                          alt="The Vault Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-cyan-500/20 via-cyan-500/10 to-transparent opacity-30"></div>
                   </>
                 )}
@@ -238,12 +287,30 @@ const BatesMotel3D = () => {
                 {floor.id === 0 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/loby.jpg')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/Entrancemob.png"
+                          alt="Lobby Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/loby.jpg"
+                          alt="Lobby Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-pink-500/20 via-pink-500/10 to-transparent opacity-30"></div>
                     
                     {/* Clickable Left Area (30%) - Faucet */}
@@ -277,12 +344,30 @@ const BatesMotel3D = () => {
                 {floor.id === 1 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/LP Rooms.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/LP Roommob.png"
+                          alt="LP Rooms Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/LP Rooms.png"
+                          alt="LP Rooms Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-purple-500/20 via-purple-500/10 to-transparent opacity-30"></div>
                   </>
                 )}
@@ -290,12 +375,30 @@ const BatesMotel3D = () => {
                 {floor.id === 2 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/Staking Rooms.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/Staking Roommob.png"
+                          alt="Staking Rooms Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/Staking Rooms.png"
+                          alt="Staking Rooms Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-purple-500/20 via-purple-500/10 to-transparent opacity-30"></div>
                   </>
                 )}
@@ -303,12 +406,30 @@ const BatesMotel3D = () => {
                 {floor.id === 3 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/Rugged Floor.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/RuggedRoommob.png"
+                          alt="Rugged Floor Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/Rugged Floor.png"
+                          alt="Rugged Floor Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-orange-500/20 via-orange-500/10 to-transparent opacity-30"></div>
                   </>
                 )}
@@ -316,12 +437,30 @@ const BatesMotel3D = () => {
                 {floor.id === 4 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/Motel Floor.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/MotelFloormob.png"
+                          alt="Motel Floor Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/Motel Floor.png"
+                          alt="Motel Floor Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-orange-500/20 via-orange-500/10 to-transparent opacity-30"></div>
                   </>
                 )}
@@ -329,12 +468,30 @@ const BatesMotel3D = () => {
                 {floor.id === 5 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/BuildersOnly.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/Builder's Roommob.png"
+                          alt="Builders Only Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/BuildersOnly.png"
+                          alt="Builders Only Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-orange-400/20 via-orange-400/10 to-transparent opacity-60"></div>
                   </>
                 )}
@@ -342,12 +499,30 @@ const BatesMotel3D = () => {
                 {floor.id === 6 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
-                    <div
-                      className="absolute inset-0 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: "url('/assets/img/SRB Penthouse.png')",
-                      }}
-                    />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/Penthousemob.png"
+                          alt="Penthouse Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/SRB Penthouse.png"
+                          alt="Penthouse Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-radial from-yellow-500/20 via-yellow-500/10 to-transparent opacity-60"></div>
                   </>
                 )}

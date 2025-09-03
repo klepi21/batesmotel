@@ -11,32 +11,42 @@ The user wants to implement the following changes to the UI:
 
 ## High-level Task Breakdown
 
-### Task 1: Update Entrance Page Background ⏳
-- [ ] Replace current entrance background with `1stLobby.png`
-- [ ] Ensure proper image scaling and positioning
-- [ ] Test click functionality remains working
+### Task 1: Update Entrance Page Background ✅
+- [x] Replace current entrance background with `1stLobby.png`
+- [x] Ensure proper image scaling and positioning
+- [x] Test click functionality remains working
 
-### Task 2: Update Lobby Background ⏳
-- [ ] Replace current lobby background (`loby.jpg`) with `1stLobby.png`
-- [ ] Ensure left and right clickable areas remain functional
-- [ ] Test navigation to faucet and game room
+### Task 2: Update Lobby Background ✅
+- [x] Replace current lobby background (`loby.jpg`) with `1stLobby.png`
+- [x] Ensure left and right clickable areas remain functional
+- [x] Test navigation to faucet and game room
 
-### Task 3: Create Game Room Page ⏳
-- [ ] Create new `/game-room` page
-- [ ] Set `GameRoom.png` as background image
-- [ ] Add return to lobby button
-- [ ] Update lobby right-click area to navigate to game room instead of external link
-- [ ] Add route enum for game room
+### Task 3: Create Game Room Page ✅
+- [x] Create new `/game-room` page
+- [x] Set `GameRoom.png` as background image
+- [x] Add return to lobby button
+- [x] Update lobby right-click area to navigate to game room instead of external link
+- [x] Add route enum for game room
 
-### Task 4: Update Faucet Page Image ⏳
-- [ ] Replace UFO pixel art with `image.png` in the left square area
-- [ ] Ensure proper image scaling and positioning
-- [ ] Maintain existing faucet functionality
+### Task 4: Update Faucet Page Image ✅
+- [x] Replace UFO pixel art with `image.png` in the left square area
+- [x] Ensure proper image scaling and positioning
+- [x] Maintain existing faucet functionality
 
-### Task 5: Update Return Navigation ⏳
-- [ ] Update faucet "Return to Lobby" button to go to `/motel` (lobby)
-- [ ] Add similar return functionality to game room page
-- [ ] Ensure smooth navigation flow between pages
+### Task 5: Update Return Navigation ✅
+- [x] Update faucet "Return to Lobby" button to go to `/motel` (lobby)
+- [x] Add similar return functionality to game room page
+- [x] Ensure smooth navigation flow between pages
+
+### Task 6: Implement Mobile Background Images ✅
+- [x] Update entrance page to use `Entrancemob.png` for mobile
+- [x] Update lobby (BatesMotel3D) to use mobile background images for each floor
+- [x] Update game room page to use `GameRoommob.png` for mobile
+- [x] Update faucet page to use appropriate mobile background
+- [x] Update staking rooms page to use `Staking Roommob.png` for mobile
+- [x] Update LP staking page to use `LP Roommob.png` for mobile
+- [x] Update other room pages with their respective mobile backgrounds
+- [x] Ensure proper responsive behavior and image scaling
 
 ## Key Challenges and Analysis
 
@@ -47,15 +57,18 @@ The user wants to implement the following changes to the UI:
 5. **Image Replacement**: Carefully replacing the UFO pixel art while maintaining layout and functionality
 
 ## Current Status / Progress Tracking
-**Executor Mode**: All tasks completed successfully!
+**Executor Mode**: Mobile background images implementation completed successfully!
 
 Final State:
-- ✅ Entrance page updated with `1stLobby.png` background
-- ✅ Lobby (BatesMotel3D) updated with `1stLobby.png` background
-- ✅ Faucet page UFO replaced with `image.png`
-- ✅ Game room page created with `GameRoom.png` background
+- ✅ Entrance page updated with `1stLobby.png` background and `Entrancemob.png` for mobile
+- ✅ Lobby (BatesMotel3D) updated with `1stLobby.png` background and mobile backgrounds for all floors
+- ✅ Faucet page UFO replaced with `image.png` and mobile background added
+- ✅ Game room page created with `GameRoom.png` background and `GameRoommob.png` for mobile
 - ✅ Navigation flow updated (lobby right-click → game room)
 - ✅ Return to lobby functionality working from both faucet and game room
+- ✅ Staking rooms page updated with `Staking Roommob.png` for mobile
+- ✅ LP staking page updated with `LP Roommob.png` for mobile
+- ✅ All floors in BatesMotel3D now use appropriate mobile background images
 
 ## Project Status Board
 - [x] **Task 1**: Update entrance page background to `1stLobby.png` ✅
@@ -63,6 +76,7 @@ Final State:
 - [x] **Task 3**: Create game room page with `GameRoom.png` background ✅
 - [x] **Task 4**: Replace faucet UFO image with `image.png` ✅
 - [x] **Task 5**: Update navigation flow and return buttons ✅
+- [x] **Task 6**: Implement mobile background images for all rooms ✅
 
 ## Previous Implementation Summary:
 
