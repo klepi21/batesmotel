@@ -18,7 +18,6 @@ interface FloorData {
 }
 
 const BatesMotel3D = () => {
-  const [currentFloor, setCurrentFloor] = useState(1);
   const [isMobile, setIsMobile] = useState(() => {
     // Initialize with a reasonable default based on window size if available
     if (typeof window !== 'undefined') {
@@ -141,17 +140,7 @@ const BatesMotel3D = () => {
     }
   ];
   
-  // Calculate which floor should be active based on scroll
-  const floorProgress = useTransform(scrollYProgress, [0, 1], [6, -1]);
 
-  useEffect(() => {
-    const unsubscribe = floorProgress.on("change", (latest) => {
-      const floorNumber = Math.round(latest);
-      setCurrentFloor(floorNumber);
-    });
-
-    return () => unsubscribe();
-  }, [floorProgress]);
 
   // Auto-scroll to floor 0 (Lobby) when component mounts
   useEffect(() => {
