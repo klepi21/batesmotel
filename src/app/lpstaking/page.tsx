@@ -215,10 +215,10 @@ const LpStakingPage = () => {
         />
         {/* Header */}
         <div className="bg-black/90 backdrop-blur-md border-b-2 border-purple-500/50 shadow-2xl">
-          <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="text-center">
               <motion.h1
-                className="text-3xl md:text-4xl lg:text-5xl font-bold text-purple-500 font-mono mb-2 tracking-wider"
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-purple-500 font-mono mb-1 sm:mb-2 tracking-wider"
                 style={{ 
                   textShadow: '0 0 10px #8A2BE2, 0 0 20px #8A2BE2',
                   letterSpacing: '0.2em'
@@ -230,7 +230,7 @@ const LpStakingPage = () => {
                 LP STAKING ROOMS
               </motion.h1>
               <motion.p
-                className="text-lg text-gray-400 font-mono tracking-wide"
+                className="text-sm sm:text-lg text-gray-400 font-mono tracking-wide"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
@@ -238,7 +238,7 @@ const LpStakingPage = () => {
                 Stake your LP tokens and earn higher rewards
               </motion.p>
               <motion.div
-                className="text-sm text-gray-500 mt-2 font-mono tracking-wide"
+                className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2 font-mono tracking-wide"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
@@ -250,25 +250,25 @@ const LpStakingPage = () => {
         </div>
 
         {/* Smart Contract Data Display */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
           {/* Connection Status */}
           {!isLoggedIn && (
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <motion.div
-                className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/50 rounded-lg p-6 text-center"
+                className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/50 rounded-lg p-4 sm:p-6 text-center"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <h3 className="text-xl font-bold text-purple-400 font-mono mb-2 tracking-wide">
+                <h3 className="text-lg sm:text-xl font-bold text-purple-400 font-mono mb-2 tracking-wide">
                   Connect Your Wallet
                 </h3>
-                <p className="text-gray-300 font-mono tracking-wide mb-4">
+                <p className="text-sm sm:text-base text-gray-300 font-mono tracking-wide mb-3 sm:mb-4">
                   Connect your wallet to view real-time staking data and interact with the smart contract.
                 </p>
                 <motion.button
                   onClick={handleConnectWallet}
-                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300"
+                  className="px-6 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300 text-sm sm:text-base"
                   style={{
                     boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
                     textShadow: '0 0 10px rgba(147, 51, 234, 0.8)',
@@ -304,8 +304,8 @@ const LpStakingPage = () => {
             )}
             
             {!loading && !error && farms.length > 0 && (
-              <div className="bg-gray-900 border border-purple-500 rounded-lg p-6 mb-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   {/* Filter farms to show only USDC farms and hide farm #43 */}
                   {farms
                     .filter(farm => farm.stakingToken.includes('USDC'))
@@ -315,7 +315,7 @@ const LpStakingPage = () => {
                     return (
                       <motion.div
                         key={farm.farm.id}
-                        className="relative bg-gradient-to-b from-gray-900 to-black border-4 p-6 font-mono"
+                        className="relative bg-gradient-to-b from-gray-900 to-black border-2 sm:border-4 p-4 sm:p-6 font-mono"
                         style={{
                           borderColor: farmColor,
                           boxShadow: `0 0 20px ${farmColor}20, inset 0 0 20px ${farmColor}10`,
@@ -327,21 +327,21 @@ const LpStakingPage = () => {
                         transition={{ duration: 0.6, delay: index * 0.1 }}
                       >
                         {/* Farm Header */}
-                        <div className="text-center mb-6">
-                          <h3 className="text-xl font-bold text-white font-mono mb-2 tracking-wide" style={{ 
+                        <div className="text-center mb-4 sm:mb-6">
+                          <h3 className="text-lg sm:text-xl font-bold text-white font-mono mb-1 sm:mb-2 tracking-wide" style={{ 
                             textShadow: `0 0 5px ${farmColor}`,
                             letterSpacing: '0.1em'
                           }}>
                             Farm #{farm.farm.id}
                           </h3>
-                          <div className="text-3xl font-bold font-mono tracking-wider" style={{ 
+                          <div className="text-2xl sm:text-3xl font-bold font-mono tracking-wider" style={{ 
                             color: farmColor,
                             textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`,
                             letterSpacing: '0.1em'
                           }}>
                             {calculateAPR(farm)}% APR
                           </div>
-                          <div className="text-sm text-gray-400 font-mono tracking-wide mt-1">
+                          <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
                             <div className="flex items-center justify-center space-x-2">
                               {/* For LP tokens, show the underlying tokens */}
                               {(() => {
@@ -444,8 +444,8 @@ const LpStakingPage = () => {
                         </div>
 
                         {/* Farm Stats */}
-                        <div className="space-y-3 mb-6">
-                          <div className="flex justify-between text-sm">
+                        <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                          <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
                             <span className="text-white font-mono tracking-wide">
                               {farm.totalStakedUSD && farm.totalStakedUSD > 0 
@@ -454,19 +454,19 @@ const LpStakingPage = () => {
                               }
                             </span>
                           </div>
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
                             <span className="text-white font-mono tracking-wide">
                               {formatBalance(getUserStakedBalance(farm.farm.id))}
                             </span>
                           </div>
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
                             <span className="text-yellow-400 font-mono tracking-wide">
                               {formatBalance(getUserHarvestableRewards(farm.farm.id))}
                             </span>
                           </div>
-                          <div className="flex justify-between text-sm">
+                          <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">Status:</span>
                             <span className={`font-mono tracking-wide ${farm.isActive ? 'text-green-400' : 'text-red-400'}`}>
                               {farm.isActive ? 'ACTIVE' : 'INACTIVE'}
@@ -475,24 +475,24 @@ const LpStakingPage = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           <button
                             onClick={() => handleStakeClick(farm)}
-                            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors font-mono border-2 border-green-500 tracking-wide"
+                            className="w-full py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors font-mono border-2 border-green-500 tracking-wide text-xs sm:text-sm"
                             style={{ imageRendering: 'pixelated' }}
                           >
                             STAKE
                           </button>
                           <button
                             onClick={() => handleUnstakeClick(farm)}
-                            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors font-mono border-2 border-red-500 tracking-wide"
+                            className="w-full py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors font-mono border-2 border-red-500 tracking-wide text-xs sm:text-sm"
                             style={{ imageRendering: 'pixelated' }}
                           >
                             UNSTAKE
                           </button>
                           <button
                             onClick={() => handleHarvestClick(farm)}
-                            className="w-full py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition-colors font-mono border-2 border-yellow-500 tracking-wide"
+                            className="w-full py-2 sm:mb-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition-colors font-mono border-2 border-yellow-500 tracking-wide text-xs sm:text-sm"
                             style={{ imageRendering: 'pixelated' }}
                           >
                             HARVEST
@@ -519,10 +519,10 @@ const LpStakingPage = () => {
                 </div>
                 
                 {/* Enter Elevator Button */}
-                <div className="text-center mt-8">
+                <div className="text-center mt-6 sm:mt-8">
                   <motion.button
                     onClick={() => window.location.href = '/motel'}
-                    className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300 transform hover:scale-105"
+                    className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
                     style={{
                       boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
                       textShadow: '0 0 10px rgba(147, 51, 234, 0.8)',
