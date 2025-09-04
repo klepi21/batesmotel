@@ -301,9 +301,9 @@ const BatesMotel3D = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-radial from-pink-500/20 via-pink-500/10 to-transparent opacity-30"></div>
                     
-                    {/* Clickable Left Area (35%) - Faucet */}
+                    {/* Clickable Left Area (30%) - Faucet */}
                     <div 
-                      className="absolute left-0 top-1/2 transform -translate-y-1/2 w-[35%] h-3/4 cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+                      className="absolute left-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4 cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50"
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
@@ -314,9 +314,9 @@ const BatesMotel3D = () => {
                       title="Click to visit Faucet"
                     />
                     
-                    {/* Clickable Right Area (35%) - Game Room */}
+                    {/* Clickable Right Area (30%) - Game Room */}
                     <div 
-                      className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[35%] h-3/4 cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4 cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50"
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
@@ -625,7 +625,7 @@ const BatesMotel3D = () => {
                       ) : (
                         <motion.button
                           onClick={handleDisconnect}
-                          className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 border-yellow-400 relative overflow-hidden"
+                          className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 border-yellow-400 relative overflow-hidden text-sm sm:text-base"
                           style={{
                             clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
                           }}
