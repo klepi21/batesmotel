@@ -583,93 +583,59 @@ const BatesMotel3D = () => {
                   </motion.p>
                 )}
 
-                {/* Floor Features - Motel Room Doors - Only show for lobby */}
+                {/* Welcome Component - Only show for lobby */}
                 {floor.id === 0 && (
                   <motion.div
-                    className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 lg:gap-8 mb-6 md:mb-8"
+                    className="flex flex-col items-center justify-center gap-4 mb-6 md:mb-8"
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.8 }}
                     viewport={{ once: true }}
                   >
-                    {floor.features.map((feature, featureIndex) => (
-                      <motion.div
-                        key={featureIndex}
-                        className="relative cursor-pointer w-20 h-30 md:w-30 md:h-45"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={isLoggedIn ? 
-                          (feature.includes("Leave Bates Hotel") ? handleDisconnect : undefined) : 
-                          (feature === "Welcome to Bates Motel, please log in to continue" ? handleConnect : undefined)}
-                      >
-                        {/* Neon Border Effect */}
-                        <div 
-                          className="absolute inset-0 rounded-lg blur-sm animate-pulse"
-                          style={{ 
-                            background: `linear-gradient(45deg, ${floor.color}, ${floor.color}40, ${floor.color})`,
-                            boxShadow: `0 0 20px ${floor.color}, 0 0 40px ${floor.color}40, 0 0 60px ${floor.color}20, inset 0 0 20px ${floor.color}10`
+                    {/* Welcome Message */}
+                    <div className="text-center mb-4 ml-0 sm:-ml-5">
+                      <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-pink-400 roboto-condensed-bold mb-2">
+                        Welcome
+                      </h2>
+                      {isLoggedIn ? (
+                        <p className="text-lg md:text-xl text-white roboto-condensed-regular">
+                          Mr/Mrs {getFormattedAddress()}
+                        </p>
+                      ) : (
+                        <p className="text-lg md:text-xl text-gray-300 roboto-condensed-regular">
+                          Please log in to continue
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 ml-0 sm:-ml-5">
+                      {!isLoggedIn ? (
+                        <motion.button
+                          onClick={handleConnect}
+                          className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90 border-pink-400 relative overflow-hidden"
+                          style={{
+                            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
                           }}
-                        />
-                        
-                        {/* Room Door */}
-                        <div
-                          className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg border-2 shadow-2xl transition-all duration-300 hover:shadow-2xl w-20 h-30 md:w-30 md:h-45"
-                          style={{ 
-                            borderColor: floor.color,
-                            boxShadow: `inset 0 0 20px ${floor.color}20, 0 0 15px ${floor.color}40, 0 0 30px ${floor.color}20`
-                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          {/* Door Handle */}
-                          <div className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2">
-                            <div 
-                              className="w-1 md:w-2 h-6 md:h-8 rounded-full"
-                              style={{ 
-                                background: `linear-gradient(to bottom, ${floor.color}, ${floor.color}80)`,
-                                boxShadow: `0 0 10px ${floor.color}, 0 0 20px ${floor.color}40`
-                              }}
-                            />
-                          </div>
-                          
-                          {/* Room Number */}
-                          <div className="absolute left-2 md:left-4 top-2 md:top-4">
-                            <div 
-                              className="w-6 md:w-8 h-6 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold"
-                              style={{ 
-                                background: `linear-gradient(45deg, ${floor.color}, ${floor.color}80)`,
-                                boxShadow: `0 0 10px ${floor.color}, 0 0 20px ${floor.color}40`
-                              }}
-                            >
-                              {featureIndex + 1}
-                            </div>
-                          </div>
-                          
-                          {/* Room Name */}
-                          <div className="absolute inset-0 flex items-center justify-center px-2 md:px-4">
-                            <span className="text-white roboto-condensed-regular text-center text-xs md:text-sm leading-tight">
-                              {feature.split('\n').map((line, idx) => {
-                                if (line.includes("Leave Bates Hotel")) {
-                                  return (
-                                    <span key={idx} className="block mt-2 text-yellow-300 font-bold text-sm md:text-base border border-yellow-300/50 rounded px-2 py-1 bg-yellow-300/10 hover:bg-yellow-300/20 transition-colors drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">
-                                      Leave Bates Hotel
-                                    </span>
-                                  );
-                                }
-                                return <span key={idx} className="block drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]">{line}</span>;
-                              })}
-                            </span>
-                          </div>
-                          
-                          {/* Neon Glow on Hover */}
-                          <div 
-                            className="absolute inset-0 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"
-                            style={{ 
-                              background: `linear-gradient(45deg, ${floor.color}30, transparent, ${floor.color}30)`,
-                              boxShadow: `0 0 30px ${floor.color}80, inset 0 0 20px ${floor.color}20`
-                            }}
-                          />
-                        </div>
-                      </motion.div>
-                    ))}
+                          <span className="relative z-10">Connect Wallet</span>
+                        </motion.button>
+                      ) : (
+                        <motion.button
+                          onClick={handleDisconnect}
+                          className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 border-yellow-400 relative overflow-hidden"
+                          style={{
+                            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className="relative z-10">Leave Bates Motel</span>
+                        </motion.button>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </div>
