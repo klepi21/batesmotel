@@ -7,6 +7,16 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'tools.multiversx.com',
+        port: '',
+        pathname: '/assets-cdn/**',
+      },
+    ],
+  },
   webpack: (config) => {
     config.resolve.fallback = { fs: false };
     config.externals.push('pino-pretty', 'lokijs', 'encoding', {

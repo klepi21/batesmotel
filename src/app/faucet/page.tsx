@@ -248,14 +248,14 @@ export default function FaucetPage() {
           }}
         />
         
-        <div className="h-full overflow-auto pt-24">
-          <div className="container max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center">
+        <div className="h-full overflow-auto pt-16 sm:pt-24">
+          <div className="container max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 h-full flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full space-y-6"
+              className="w-full space-y-4 sm:space-y-6"
             >
-              <div className="bg-black/90 backdrop-blur-sm border-4 border-pink-500 shadow-2xl p-12 relative overflow-hidden" 
+              <div className="bg-black/90 backdrop-blur-sm border-2 sm:border-4 border-pink-500 shadow-2xl p-4 sm:p-8 lg:p-12 relative overflow-hidden" 
                    style={{
                      clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))',
                      boxShadow: '0 0 30px rgba(255, 105, 180, 0.5), inset 0 0 30px rgba(255, 105, 180, 0.1)'
@@ -275,11 +275,11 @@ export default function FaucetPage() {
                   }}
                 />
                 
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
                   {/* Left Column */}
                   <div className="flex flex-col items-center justify-center">
                     {/* Faucet Image */}
-                    <div className="w-48 h-48 relative mb-8">
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-48 lg:h-48 relative mb-4 sm:mb-6 lg:mb-8">
                       <div className="w-full h-full border-4 border-pink-500/50 flex items-center justify-center relative overflow-hidden"
                            style={{
                              clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
@@ -335,12 +335,12 @@ export default function FaucetPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6, delay: 0.2 }}
                     >
-                      Get RARE tokens to participate in voting and other activities. You can claim once per epoch.
+                      Claim RARE tokens. Use them as you wish.
                     </motion.p>
 
-                    {/* Status */}
+                    {/* Simple Status */}
                     <motion.div 
-                      className="bg-black/70 p-6 mb-8 border-2 border-pink-500 relative overflow-hidden"
+                      className="bg-black/70 p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-pink-500 relative overflow-hidden"
                       style={{
                         clipPath: 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px))'
                       }}
@@ -363,24 +363,11 @@ export default function FaucetPage() {
                         }}
                       />
                       
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-pink-300 roboto-condensed-regular">Status</span>
-                          <span className={`px-3 py-1 rounded-full text-sm roboto-condensed-bold ${
-                            faucetInfo?.can_claim 
-                              ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
-                              : 'bg-red-500/20 text-red-400 border border-red-500/50'
-                          }`}>
-                            {faucetInfo?.can_claim ? 'Available' : 'Unavailable'}
-                          </span>
+                      <div className="relative z-10 text-center">
+                        <div className="text-pink-300 roboto-condensed-regular mb-2">Ready to claim</div>
+                        <div className="text-white roboto-condensed-bold text-lg">
+                          {faucetInfo?.can_claim ? 'Available' : 'Unavailable'}
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-pink-300 roboto-condensed-regular">Faucet Balance</span>
-                          <span className="text-white roboto-condensed-bold">
-                            {faucetInfo?.has_enough_balance ? 'Available' : 'Insufficient'}
-                          </span>
-                        </div>
-                        {/* Countdown feature temporarily disabled */}
                       </div>
                     </motion.div>
 
@@ -440,7 +427,7 @@ export default function FaucetPage() {
                       transition={{ duration: 0.6, delay: 0.8 }}
                     >
                       <p className="text-sm text-pink-300 flex items-center gap-2 roboto-condensed-regular">
-                        This faucet provides RARE tokens for Vote purposes. You can claim once per epoch.
+                        RARE tokens. Use them as you wish.
                       </p>
                     </motion.div>
                   </div>
@@ -456,7 +443,7 @@ export default function FaucetPage() {
               >
                 <motion.button
                   onClick={() => router.push('/motel')}
-                  className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90 border-blue-400 relative overflow-hidden"
+                  className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90 border-blue-400 relative overflow-hidden text-sm sm:text-base"
                   style={{
                     clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
                   }}
@@ -485,7 +472,7 @@ export default function FaucetPage() {
               {/* Admin Deposit Section */}
               {isLoggedIn && address && ADMIN_ADDRESSES.includes(address) && (
                 <motion.div 
-                  className="bg-black/80 backdrop-blur-sm rounded-3xl border border-pink-500/30 shadow-2xl p-8 relative overflow-hidden"
+                  className="bg-black/80 backdrop-blur-sm rounded-3xl border border-pink-500/30 shadow-2xl p-4 sm:p-6 lg:p-8 relative overflow-hidden"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 1 }}
@@ -512,18 +499,18 @@ export default function FaucetPage() {
                             />
                       </span>
                     </h3>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                       <input
                         type="number"
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                         placeholder="Amount of RARE"
-                        className="flex-1 bg-black/50 border border-pink-500/50 rounded-xl px-4 py-3 text-white placeholder-pink-500/50 focus:outline-none focus:border-pink-400 roboto-condensed-regular"
+                        className="flex-1 bg-black/50 border border-pink-500/50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-pink-500/50 focus:outline-none focus:border-pink-400 roboto-condensed-regular text-sm sm:text-base"
                       />
                       <button
                         onClick={handleDeposit}
                         disabled={isDepositing || !depositAmount}
-                        className={`px-6 rounded-xl font-medium transition-all roboto-condensed-bold ${
+                        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-medium transition-all roboto-condensed-bold text-sm sm:text-base ${
                           isDepositing || !depositAmount
                             ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
                             : 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:opacity-90 border border-yellow-400/50'
