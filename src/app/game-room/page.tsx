@@ -19,12 +19,10 @@ const GameRoomPage = () => {
       <div className="relative w-full h-screen bg-black overflow-hidden">
         {/* Desktop Background Image */}
         <div className="absolute inset-0 hidden md:block">
-          <Image
+          <img
             src="/assets/img/GameRoom.png"
             alt="Game Room"
-            fill
-            className="object-cover object-center"
-            priority
+            className="w-full h-full object-cover object-center"
           />
         </div>
         
