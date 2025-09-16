@@ -934,7 +934,11 @@ export class SmartContractService {
 
   // Create RARE fee transaction (10 RARE tokens)
   createRareFeeTransaction(userAddress: string, chainId: string = '1'): Transaction {
-    console.log('Creating RARE fee transaction:', { userAddress });
+    console.log('Creating RARE fee transaction:', { 
+      userAddress, 
+      feeWallet: 'erd18d8nv0h90pwjxt3c4af8kktfpr2ksyyjvc82t0gk5n8dtaf252esa7jfcm',
+      amount: '10 RARE'
+    });
     
     // 10 RARE tokens with 18 decimals
     const rareAmount = BigInt(10 * Math.pow(10, 18));
@@ -948,7 +952,7 @@ export class SmartContractService {
     
     return new Transaction({
       sender: new Address(userAddress),
-      receiver: new Address('erd1u5p4njlv9rxvzvmhsxjypa69t2dran33x9ttpx0ghft7tt35wpfsxgynw4'),
+      receiver: new Address('erd18d8nv0h90pwjxt3c4af8kktfpr2ksyyjvc82t0gk5n8dtaf252esa7jfcm'),
       value: BigInt(0),
       data: new Uint8Array(Buffer.from(data)),
       gasLimit: BigInt(50000000), // 50M gas limit for simple ESDT transfer
