@@ -88,26 +88,9 @@ const LpStakingPage = () => {
   // APR calculation - use calculated APR for multi-farms, simple calculation for others
   const calculateAPR = (farm: FarmInfo): number => {
     try {
-      // Log farm 116 details for debugging
-      if (farm.farm.id === '116') {
-        console.log('🔍 LP STAKING - FARM 116 APR CALCULATION:', {
-          farmId: farm.farm.id,
-          stakingToken: farm.stakingToken,
-          totalStaked: farm.totalStaked,
-          totalRewards: farm.totalRewards,
-          isMultiReward: farm.isMultiReward,
-          calculatedAPR: farm.calculatedAPR,
-          rewardTokens: farm.rewardTokens,
-          totalStakedUSD: farm.totalStakedUSD,
-          isActive: farm.isActive
-        });
-      }
 
       // For multi-farm pools, use the calculated APR from smart contract service
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
-        if (farm.farm.id === '116') {
-          console.log('🔍 LP STAKING - Using calculated APR for farm 116:', farm.calculatedAPR);
-        }
         return farm.calculatedAPR;
       }
       
@@ -115,32 +98,15 @@ const LpStakingPage = () => {
       const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
       const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
       
-      if (farm.farm.id === '116') {
-        console.log('🔍 LP STAKING - Simple APR calculation for farm 116:', {
-          totalStakedNum,
-          totalRewardsNum,
-          totalStakedRaw: farm.totalStaked,
-          totalRewardsRaw: farm.totalRewards
-        });
-      }
       
       if (totalStakedNum === 0) {
-        if (farm.farm.id === '116') {
-          console.log('🔍 LP STAKING - Farm 116 totalStaked is 0, returning 0 APR');
-        }
         return 0;
       }
       
       // Simple APR calculation (annualized)
       const apr = (totalRewardsNum / totalStakedNum) * 100 * 365;
-      if (farm.farm.id === '116') {
-        console.log('🔍 LP STAKING - Farm 116 calculated APR:', apr);
-      }
       return Math.round(apr); // Round to whole number
     } catch (error) {
-      if (farm.farm.id === '116') {
-        console.log('🔍 LP STAKING - Error in APR calculation for farm 116:', error);
-      }
       return 0;
     }
   };
