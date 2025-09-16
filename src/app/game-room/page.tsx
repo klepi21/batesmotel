@@ -16,19 +16,15 @@ const GameRoomPage = () => {
 
   return (
     <AuthRedirectWrapper requireAuth={false}>
-      <div className="relative w-full h-screen bg-black overflow-hidden">
-        {/* Desktop Background Image */}
-        <img
-          src="/assets/img/GameRoom.png"
-          alt="Game Room"
-          className="absolute inset-0 w-full h-full object-cover object-center z-0 md:block hidden"
-          onError={(e) => {
-            console.error('Failed to load GameRoom.png:', e);
-            e.currentTarget.style.display = 'none';
-          }}
-          onLoad={() => console.log('GameRoom.png loaded successfully')}
-        />
-        
+      <div 
+        className="relative w-full h-screen overflow-hidden"
+        style={{
+          backgroundImage: 'url(/assets/img/GameRoom.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
         {/* Mobile Background Image - Full Layout */}
         <div className="absolute inset-0 md:hidden z-0">
           <Image
@@ -40,8 +36,6 @@ const GameRoomPage = () => {
           />
         </div>
         
-        {/* Overlay for better contrast - reduced opacity */}
-        <div className="absolute inset-0 bg-black bg-opacity-10 z-10"></div>
         
         {/* Return to Lobby Button */}
         <motion.div 
@@ -78,29 +72,6 @@ const GameRoomPage = () => {
           </motion.button>
         </motion.div>
 
-        {/* Floating particles effect */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-blue-400/60 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [0, -100, 0],
-                opacity: [0.6, 1, 0.6],
-                scale: [1, 1.2, 1]
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2
-              }}
-            />
-          ))}
-        </div>
       </div>
     </AuthRedirectWrapper>
   );
