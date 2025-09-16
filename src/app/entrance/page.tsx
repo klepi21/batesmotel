@@ -57,15 +57,16 @@ const EntrancePage = () => {
       {/* Overlay for better text visibility */}
       <div className="absolute inset-0 bg-black bg-opacity-20"></div>
       
-      {/* Click to Enter Text */}
-      <div className={`absolute inset-0 flex items-center justify-center py-4 ${isMobile ? 'translate-x-[30px] translate-y-[70px]' : 'translate-x-0 translate-y-0'}`}>
-        <div className="text-center text-white">
-
-          <p className="text-xl md:text-2xl drop-shadow-lg animate-pulse pr-16">
-            Click to Enter
-          </p>
+      {/* Click to Enter Text - Mobile only */}
+      {isMobile && (
+        <div className="absolute">
+          <div className="text-center text-white" style={{ marginLeft: '210px', marginTop: '600px' }}>
+            <p className="text-xl drop-shadow-lg animate-pulse">
+              Click to Enter
+            </p>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Subtle hover effect */}
       <div className="absolute inset-0 bg-white bg-opacity-0 hover:bg-opacity-5 transition-all duration-300"></div>
