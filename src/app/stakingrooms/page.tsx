@@ -236,6 +236,11 @@ const StakingRoomsPage = () => {
     return colors[index];
   };
 
+  // Get token symbol from token identifier
+  const getTokenSymbol = (tokenIdentifier: string): string => {
+    return tokenIdentifier.split('-')[0];
+  };
+
   return (
     <AuthRedirectWrapper requireAuth={false}>
       <div className="min-h-screen bg-black relative">
@@ -458,12 +463,38 @@ const StakingRoomsPage = () => {
                         <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                           <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
-                            <span className="text-white font-mono tracking-wide">
-                              {farm.totalStakedUSD && farm.totalStakedUSD > 0 
-                                ? `$${farm.totalStakedUSD.toFixed(2)}` 
-                                : formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)
-                              }
-                            </span>
+                            <div className="flex items-center space-x-2 text-white font-mono tracking-wide">
+                              {farm.totalStakedUSD && farm.totalStakedUSD > 0 ? (
+                                <>
+                                  <span>${farm.totalStakedUSD.toFixed(2)}</span>
+                                  <span className="text-gray-400">(</span>
+                                  <div className="flex items-center space-x-1">
+                                    <img 
+                                      src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
+                                      alt={farm.stakingToken}
+                                      className="w-4 h-4 rounded-full"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                    <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)} {getTokenSymbol(farm.stakingToken)}</span>
+                                  </div>
+                                  <span className="text-gray-400">)</span>
+                                </>
+                              ) : (
+                                <div className="flex items-center space-x-1">
+                                  <img 
+                                    src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
+                                    alt={farm.stakingToken}
+                                    className="w-4 h-4 rounded-full"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                  <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)} {getTokenSymbol(farm.stakingToken)}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
