@@ -18,21 +18,19 @@ const GameRoomPage = () => {
     <AuthRedirectWrapper requireAuth={false}>
       <div className="relative w-full h-screen bg-black overflow-hidden">
         {/* Desktop Background Image */}
-        <div className="absolute inset-0 hidden md:block z-0">
-          <img
-            src="/assets/img/GameRoom.png"
-            alt="Game Room"
-            className="w-full h-full object-cover object-center"
-            onError={(e) => {
-              console.error('Failed to load GameRoom.png:', e);
-              e.currentTarget.style.display = 'none';
-            }}
-            onLoad={() => console.log('GameRoom.png loaded successfully')}
-          />
-        </div>
+        <img
+          src="/assets/img/GameRoom.png"
+          alt="Game Room"
+          className="absolute inset-0 w-full h-full object-cover object-center z-0 md:block hidden"
+          onError={(e) => {
+            console.error('Failed to load GameRoom.png:', e);
+            e.currentTarget.style.display = 'none';
+          }}
+          onLoad={() => console.log('GameRoom.png loaded successfully')}
+        />
         
         {/* Mobile Background Image - Full Layout */}
-        <div className="absolute inset-0 block md:hidden z-0">
+        <div className="absolute inset-0 md:hidden z-0">
           <Image
             src="/assets/img/mob/GameRoommob.png"
             alt="Game Room Mobile"
