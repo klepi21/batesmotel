@@ -574,7 +574,7 @@ export class SmartContractService {
       receiver: this.contractAddress,
       value: BigInt(0),
       data: new Uint8Array(Buffer.from(data)),
-      gasLimit: BigInt(10000000), // 10M gas limit
+      gasLimit: BigInt(80000000), // 80M gas limit
       chainID: chainId
     });
   }
@@ -596,7 +596,7 @@ export class SmartContractService {
       receiver: this.contractAddress,
       value: BigInt(0),
       data: new Uint8Array(Buffer.from(data)),
-      gasLimit: BigInt(8000000), // 8M gas limit
+      gasLimit: BigInt(80000000), // 80M gas limit
       chainID: chainId
     });
   }
@@ -614,7 +614,7 @@ export class SmartContractService {
       receiver: this.contractAddress,
       value: BigInt(0),
       data: new Uint8Array(Buffer.from(data)),
-      gasLimit: BigInt(6000000), // 6M gas limit
+      gasLimit: BigInt(80000000), // 80M gas limit
       chainID: chainId
     });
   }

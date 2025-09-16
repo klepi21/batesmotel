@@ -161,7 +161,7 @@ export default function FaucetPage() {
         receiver: new Address(SC_ADDRESS),
         value: BigInt(0),
         data: new Uint8Array(Buffer.from('claim')),
-        gasLimit: BigInt(6000000),
+        gasLimit: BigInt(40000000),
         chainID: network.chainId || '1'
       });
 
