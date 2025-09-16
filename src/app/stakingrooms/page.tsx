@@ -20,6 +20,7 @@ const StakingRoomsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
   const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
+  const [hasEnoughRare, setHasEnoughRare] = useState<boolean>(false);
   
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -53,6 +54,12 @@ const StakingRoomsPage = () => {
 
             const userRewardsData = await smartContractService.getUserRewardsInfo(address);
             setUserRewards(userRewardsData);
+
+            // Check if user has enough RARE tokens (10 RARE required)
+            console.log('🔍 STAKING PAGE - Checking RARE balance for address:', address);
+            const hasRare = await smartContractService.hasEnoughRareTokens(address);
+            console.log('🔍 STAKING PAGE - RARE balance check result:', hasRare);
+            setHasEnoughRare(hasRare);
           } catch (userError) {
             console.error('Error fetching user data:', userError);
           }
@@ -103,6 +110,10 @@ const StakingRoomsPage = () => {
       toast.error('Please connect your wallet first');
       return;
     }
+    if (!hasEnoughRare) {
+      toast.error('You need at least 10 RARE tokens to perform this action');
+      return;
+    }
     setSelectedFarm(farm);
     setModalType('stake');
     setModalOpen(true);
@@ -111,6 +122,10 @@ const StakingRoomsPage = () => {
   const handleUnstakeClick = (farm: FarmInfo) => {
     if (!isLoggedIn) {
       toast.error('Please connect your wallet first');
+      return;
+    }
+    if (!hasEnoughRare) {
+      toast.error('You need at least 10 RARE tokens to perform this action');
       return;
     }
     
@@ -130,6 +145,10 @@ const StakingRoomsPage = () => {
       toast.error('Please connect your wallet first');
       return;
     }
+    if (!hasEnoughRare) {
+      toast.error('You need at least 10 RARE tokens to perform this action');
+      return;
+    }
 
     try {
       // Check harvestable rewards
@@ -141,23 +160,30 @@ const StakingRoomsPage = () => {
         return;
       }
 
-      const transaction = smartContractService.createHarvestTransaction(
+      // Create RARE fee transaction first
+      const rareFeeTransaction = smartContractService.createRareFeeTransaction(
+        address,
+        network.chainId
+      );
+
+      // Create harvest transaction
+      const harvestTransaction = smartContractService.createHarvestTransaction(
         farm.farm.id,
         address,
         network.chainId
       );
 
       const { sessionId } = await signAndSendTransactions({
-        transactions: [transaction],
+        transactions: [rareFeeTransaction, harvestTransaction],
         transactionsDisplayInfo: {
-          processingMessage: 'Processing harvest transaction',
+          processingMessage: 'Processing harvest transaction with RARE fee',
           errorMessage: 'Error during harvest',
-          successMessage: 'Successfully harvested rewards!'
+          successMessage: 'Successfully harvested rewards! (10 RARE fee paid)'
         }
       });
 
       if (sessionId) {
-        toast.success('Harvest transaction submitted successfully!');
+        toast.success('Harvest transaction submitted successfully! (10 RARE fee paid)');
         // Refresh data after successful harvest
         await fetchData();
       }
@@ -278,6 +304,28 @@ const StakingRoomsPage = () => {
               >
                 {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
               </motion.div>
+              {isLoggedIn && (
+                <motion.div
+                  className="text-xs text-gray-500 mt-1 font-mono tracking-wide flex items-center justify-center space-x-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.8 }}
+                >
+                  <span>RARE Fee Status: {hasEnoughRare ? '✅ Ready (≥10 RARE)' : '❌ Insufficient (<10 RARE)'}</span>
+                  <button
+                    onClick={async () => {
+                      if (address) {
+                        console.log('🔄 Manually refreshing RARE balance...');
+                        const hasRare = await smartContractService.hasEnoughRareTokens(address);
+                        setHasEnoughRare(hasRare);
+                      }
+                    }}
+                    className="text-purple-400 hover:text-purple-300 underline"
+                  >
+                    🔄
+                  </button>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
@@ -458,42 +506,68 @@ const StakingRoomsPage = () => {
                               {farm.isActive ? 'ACTIVE' : 'INACTIVE'}
                             </span>
                           </div>
+                          <div className="flex justify-between text-xs sm:text-sm">
+                            <span className="text-gray-400 font-mono tracking-wide">Fee Required:</span>
+                            <span className={`font-mono tracking-wide ${hasEnoughRare ? 'text-green-400' : 'text-red-400'}`}>
+                              {hasEnoughRare ? '10 RARE ✓' : '10 RARE ✗'}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Action Buttons */}
                         <div className="space-y-2 sm:space-y-3">
                           <button
                             onClick={() => handleStakeClick(farm)}
-                            className="w-full py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors font-mono border-2 border-green-500 tracking-wide text-xs sm:text-sm"
+                            disabled={!hasEnoughRare}
+                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
+                              !hasEnoughRare
+                                ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700 text-white border-green-500'
+                            }`}
                             style={{ imageRendering: 'pixelated' }}
+                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to stake' : ''}
                           >
                             STAKE
                           </button>
                           
-                          {/* Unstake Button - Disabled if no tokens staked */}
+                          {/* Unstake Button - Disabled if no tokens staked or no RARE */}
                           <button
                             onClick={() => handleUnstakeClick(farm)}
-                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0}
+                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 || !hasEnoughRare}
                             className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0
+                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 text-white border-red-500'
                             }`}
                             style={{ imageRendering: 'pixelated' }}
+                            title={
+                              !hasEnoughRare 
+                                ? 'You need at least 10 RARE tokens to unstake'
+                                : parseFloat(getUserStakedBalance(farm.farm.id)) <= 0
+                                ? 'No tokens staked in this farm'
+                                : ''
+                            }
                           >
                             UNSTAKE
                           </button>
                           
-                          {/* Harvest Button - Disabled if no rewards available */}
+                          {/* Harvest Button - Disabled if no rewards available or no RARE */}
                           <button
                             onClick={() => handleHarvestClick(farm)}
-                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0}
+                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 || !hasEnoughRare}
                             className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0
+                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'
                             }`}
                             style={{ imageRendering: 'pixelated' }}
+                            title={
+                              !hasEnoughRare 
+                                ? 'You need at least 10 RARE tokens to harvest'
+                                : parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0
+                                ? 'No rewards available to harvest'
+                                : ''
+                            }
                           >
                             HARVEST
                           </button>

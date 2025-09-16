@@ -88,7 +88,13 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     try {
       setLoading(true);
 
-      let transaction;
+      // Create RARE fee transaction first
+      const rareFeeTransaction = smartContractService.createRareFeeTransaction(
+        address,
+        network.chainId
+      );
+
+      let mainTransaction;
       
       if (modalType === 'stake') {
         // Check if user has enough balance
@@ -98,7 +104,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
           return;
         }
         
-        transaction = smartContractService.createStakeTransaction(
+        mainTransaction = smartContractService.createStakeTransaction(
           farmId,
           amount,
           stakingToken,
@@ -114,7 +120,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
           return;
         }
         
-        transaction = smartContractService.createUnstakeTransaction(
+        mainTransaction = smartContractService.createUnstakeTransaction(
           farmId,
           amount,
           address,
@@ -123,16 +129,16 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       }
 
       const { sessionId } = await signAndSendTransactions({
-        transactions: [transaction],
+        transactions: [rareFeeTransaction, mainTransaction],
         transactionsDisplayInfo: {
-          processingMessage: `Processing ${modalType} transaction`,
+          processingMessage: `Processing ${modalType} transaction with RARE fee`,
           errorMessage: `Error during ${modalType}`,
-          successMessage: `Successfully ${modalType}d tokens!`
+          successMessage: `Successfully ${modalType}d tokens! (10 RARE fee paid)`
         }
       });
 
       if (sessionId) {
-        toast.success(`${modalType} transaction submitted successfully!`);
+        toast.success(`${modalType} transaction submitted successfully! (10 RARE fee paid)`);
         onClose();
         onSuccess?.();
       }

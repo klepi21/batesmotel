@@ -932,6 +932,70 @@ export class SmartContractService {
     }
   }
 
+  // Create RARE fee transaction (10 RARE tokens)
+  createRareFeeTransaction(userAddress: string, chainId: string = '1'): Transaction {
+    console.log('Creating RARE fee transaction:', { userAddress });
+    
+    // 10 RARE tokens with 18 decimals
+    const rareAmount = BigInt(10 * Math.pow(10, 18));
+    
+    // Create ESDT transfer data for RARE token
+    const rareTokenId = 'RARE-99e8b0';
+    const tokenIdentifierHex = Buffer.from(rareTokenId).toString('hex');
+    const amountHex = rareAmount.toString(16).padStart(64, '0');
+    
+    const data = `ESDTTransfer@${tokenIdentifierHex}@${amountHex}`;
+    
+    return new Transaction({
+      sender: new Address(userAddress),
+      receiver: new Address('erd1u5p4njlv9rxvzvmhsxjypa69t2dran33x9ttpx0ghft7tt35wpfsxgynw4'),
+      value: BigInt(0),
+      data: new Uint8Array(Buffer.from(data)),
+      gasLimit: BigInt(50000000), // 50M gas limit for simple ESDT transfer
+      chainID: chainId
+    });
+  }
+
+  // Check if user has enough RARE tokens (10 RARE required)
+  async hasEnoughRareTokens(userAddress: string): Promise<boolean> {
+    try {
+      console.log('🔍 Checking RARE token balance for address:', userAddress);
+      
+      // Get user's RARE token balance from the API
+      const response = await fetch(`https://api.multiversx.com/accounts/${userAddress}/tokens`);
+      
+      if (!response.ok) {
+        console.error('❌ API response not OK:', response.status, response.statusText);
+        return false;
+      }
+      
+      const tokens = await response.json();
+      console.log('📊 All user tokens:', tokens);
+      
+      // Find RARE token in the user's token list
+      const rareToken = tokens.find((token: any) => token.identifier === 'RARE-99e8b0');
+      
+      if (!rareToken) {
+        console.log('⚠️ User has no RARE tokens in their token list');
+        console.log('Available tokens:', tokens.map((t: any) => t.identifier));
+        return false;
+      }
+      
+      console.log('💰 RARE token found:', rareToken);
+      
+      // Convert balance to number (RARE has 18 decimals)
+      const balance = parseFloat(rareToken.balance) / Math.pow(10, 18);
+      const requiredAmount = 10;
+      
+      console.log(`📈 User RARE balance: ${balance}, Required: ${requiredAmount}, Has enough: ${balance >= requiredAmount}`);
+      
+      return balance >= requiredAmount;
+    } catch (error) {
+      console.error('❌ Error checking RARE token balance:', error);
+      return false;
+    }
+  }
+
   // Transaction methods for staking functionality
   createStakeTransaction(farmId: string, amount: string, stakingToken: string, userAddress: string, chainId: string = '1'): Transaction {
     console.log('Creating stake transaction:', { farmId, amount, stakingToken, userAddress });

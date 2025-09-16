@@ -85,18 +85,25 @@ const LpStakingPage = () => {
     try {
       // For multi-farm pools, use the calculated APR from smart contract service
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
-        console.log(`Using calculated APR for farm ${farm.farm.id}:`, farm.calculatedAPR);
+        console.log(`🔍 LP STAKING - Using calculated APR for farm ${farm.farm.id}:`, farm.calculatedAPR);
+        console.log(`🔍 LP STAKING - Farm ${farm.farm.id} data:`, {
+          totalStaked: farm.totalStaked,
+          totalRewards: farm.totalRewards,
+          totalStakedUSD: farm.totalStakedUSD,
+          isActive: farm.isActive,
+          rewardTokens: farm.rewardTokens
+        });
         return farm.calculatedAPR;
       }
       
-      // For regular farms, use simple calculation
-      const totalStaked = parseFloat(farm.totalStaked) / Math.pow(10, 18);
-      const totalRewards = parseFloat(farm.totalRewards) / Math.pow(10, 18);
+      // For regular farms, use simple calculation with proper decimal handling
+      const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
+      const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
       
-      if (totalStaked === 0) return 0;
+      if (totalStakedNum === 0) return 0;
       
       // Simple APR calculation (annualized)
-      const apr = (totalRewards / totalStaked) * 100 * 365;
+      const apr = (totalRewardsNum / totalStakedNum) * 100 * 365;
       return Math.round(apr); // Round to whole number
     } catch {
       return 0;
