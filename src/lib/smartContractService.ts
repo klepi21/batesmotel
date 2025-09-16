@@ -30,6 +30,7 @@ export interface FarmInfo {
   totalStakedUSD?: number;
   rewardTokens?: string[]; // For multi-reward farms
   isMultiReward?: boolean;
+  calculatedAPR?: number; // For multi-farm APR calculation
 }
 
 export interface UserFarmInfo {
@@ -75,6 +76,10 @@ export class SmartContractService {
   private abiRegistry: AbiRegistry;
   private lpPairs: LPPair[] = [];
   private tokenPairs: TokenPair[] = [];
+  private multifarmRewardsLeftCache: MultiFarmRewardsLeft[] | null = null;
+  private farmsCache: FarmInfo[] | null = null;
+  private cacheTimestamp: number = 0;
+  private readonly CACHE_DURATION = 30000; // 30 seconds cache
 
   constructor() {
     // Initialize the network provider for mainnet
@@ -110,15 +115,67 @@ export class SmartContractService {
 
   async fetchTokenPairs(): Promise<TokenPair[]> {
     try {
-      console.log('Fetching token pairs from API...');
-      const response = await fetch('https://api.web3ninja.eu/api/pairs.php');
-      const data = await response.json();
-      this.tokenPairs = data;
-      console.log('Token pairs loaded:', this.tokenPairs.length, 'pairs');
-      return data;
+      console.log('🔄 Fetching token prices from MultiversX API...');
+      const response = await fetch('https://api.multiversx.com/tokens?size=400');
+      const tokens = await response.json();
+      
+      // Convert MultiversX API format to our TokenPair format
+      const tokenPairs: (TokenPair & { decimals?: number })[] = tokens
+        .filter((token: any) => token.price && token.price > 0)
+        .map((token: any) => ({
+          tokenA: token.identifier,
+          tokenB: 'USDC-8d4068', // Using USDC as base pair
+          tokenAprice: token.price.toString(),
+          tokenBprice: '1.00',
+          decimals: token.decimals || 18 // Store decimals for each token
+        }));
+      
+      this.tokenPairs = tokenPairs;
+      console.log(`✅ Token prices loaded: ${tokenPairs.length} tokens with prices`);
+      
+      // Log specific tokens we're interested in
+      const interestingTokens = ['RARE-99e8b0', 'BATES-bb3dd6', 'DBATES-78f441'];
+      interestingTokens.forEach(tokenId => {
+        const token = tokens.find((t: any) => t.identifier === tokenId);
+        if (token) {
+          console.log(`💰 ${tokenId}: $${token.price}`);
+        } else {
+          console.log(`⚠️ ${tokenId}: No price data available`);
+        }
+      });
+      
+      return tokenPairs;
     } catch (error) {
-      console.error('Error fetching token pairs:', error);
-      return [];
+      console.error('❌ Error fetching token prices from MultiversX API, using fallback prices:', error);
+      
+      // Fallback hardcoded prices for known tokens
+      const fallbackPrices: TokenPair[] = [
+        {
+          tokenA: 'RARE-99e8b0',
+          tokenB: 'USDC-8d4068',
+          tokenAprice: '0.001', // Example price
+          tokenBprice: '1.00',
+          contract: null
+        },
+        {
+          tokenA: 'BATES-bb3dd6',
+          tokenB: 'USDC-8d4068', 
+          tokenAprice: '0.0005', // Example price
+          tokenBprice: '1.00',
+          contract: null
+        },
+        {
+          tokenA: 'DBATES-78f441',
+          tokenB: 'USDC-8d4068',
+          tokenAprice: '0.0003', // Example price
+          tokenBprice: '1.00',
+          contract: null
+        }
+      ];
+      
+      this.tokenPairs = fallbackPrices;
+      console.log('Using fallback token prices:', fallbackPrices);
+      return fallbackPrices;
     }
   }
 
@@ -169,15 +226,320 @@ export class SmartContractService {
     return totalStakedNum * tokenPrice;
   }
 
+  formatBalanceDollar(balance: { balance: string; decimals: number }, price: number): number {
+    // Handle large numbers properly by using string manipulation
+    const balanceStr = balance.balance;
+    const decimals = balance.decimals;
+    
+    // Convert to proper decimal format by moving decimal point
+    if (balanceStr.length <= decimals) {
+      // If balance is smaller than decimals, pad with zeros
+      const paddedBalance = balanceStr.padStart(decimals + 1, '0');
+      const integerPart = paddedBalance.slice(0, -decimals);
+      const decimalPart = paddedBalance.slice(-decimals);
+      const balanceNum = parseFloat(`${integerPart}.${decimalPart}`);
+      return balanceNum * price;
+    } else {
+      // Split the balance string at the decimal position
+      const integerPart = balanceStr.slice(0, -decimals);
+      const decimalPart = balanceStr.slice(-decimals);
+      const balanceNum = parseFloat(`${integerPart}.${decimalPart}`);
+      return balanceNum * price;
+    }
+  }
+
+  // Get token decimals from MultiversX API data
+  getTokenDecimals(tokenIdentifier: string): number {
+    // Try to find the token in our cached data
+    const token = this.tokenPairs.find(pair => pair.tokenA === tokenIdentifier);
+    if (token && (token as any).decimals) {
+      return (token as any).decimals;
+    }
+    
+    // Fallback to common decimals for known tokens
+    const knownDecimals: { [key: string]: number } = {
+      'RARE-99e8b0': 18,
+      'BATES-bb3dd6': 18,
+      'DBATES-78f441': 18,
+      'HYPE-619661': 18,
+      'FEDUP-0994a9': 18,
+      'USDC-8d4068': 6,
+      'EGLD': 18
+    };
+    
+    return knownDecimals[tokenIdentifier] || 18; // Default to 18 if unknown
+  }
+
+  // Get epochs remaining for a farm
+  async getEpochsRemainingForFarm(farmId: string): Promise<number> {
+    try {
+      // Use lastRewardedEpoch endpoint to get the last epoch with rewards
+      const query = this.controller.createQuery({
+        contract: this.contractAddress,
+        function: 'lastRewardedEpoch',
+        arguments: [farmId]
+      });
+
+      const response = await this.controller.runQuery(query);
+      const [result] = this.controller.parseQueryResponse(response);
+
+      if (farmId === '115') {
+        console.log(`📅 Farm ${farmId} lastRewardedEpoch result:`, result);
+      }
+
+      if (result) {
+        const lastRewardedEpoch = result.toNumber ? result.toNumber() : parseInt(result.toString() || '0');
+        
+        // Get current epoch from network
+        const currentEpoch = await this.getCurrentEpoch();
+        
+        // Calculate epoch difference using the correct formula
+        // epochDifference = lastRewardedEpoch + 1 - currentEpoch
+        const epochDifference = Math.max(1, lastRewardedEpoch + 1 - currentEpoch);
+        
+        if (farmId === '115') {
+          console.log(`📅 Farm ${farmId} epochs info:`, {
+            lastRewardedEpoch,
+            currentEpoch,
+            epochDifference
+          });
+        }
+        
+        return epochDifference;
+      }
+
+      // Fallback: assume 30 days (30 epochs) if no data found
+      console.log(`⚠️ No lastRewardedEpoch data found for farm ${farmId}, using fallback of 30 epochs`);
+      return 30;
+      
+    } catch (error) {
+      console.error(`Error getting epochs remaining for farm ${farmId}:`, error);
+      // Fallback: assume 30 days (30 epochs)
+      return 30;
+    }
+  }
+
+  // Get current epoch from network stats
+  async getCurrentEpoch(): Promise<number> {
+    try {
+      // Use the BlastAPI endpoint to get network stats
+      const response = await fetch('https://multiversx-api.blastapi.io/8be44138-082f-489f-8c13-d65058567ca4/stats');
+      const stats = await response.json();
+      const currentEpoch = stats?.epoch || 1000;
+      console.log(`🌐 Current epoch from BlastAPI: ${currentEpoch}`);
+      return currentEpoch;
+    } catch (error) {
+      console.error('Error getting current epoch from BlastAPI, using fallback:', error);
+      return 1000; // Fallback
+    }
+  }
+
+  async calculateMultiFarmAPR(farmId: string, stakingToken: string, totalStaked: string): Promise<number> {
+    try {
+      // Only log for farm 115
+      if (farmId === '115') {
+        console.log(`🔍 CALCULATING APR FOR MULTI-FARM ${farmId}:`);
+      }
+      
+      // Fetch multi-farm rewards left
+      const multifarmRewardsLeft = await this.fetchMultiFarms2RewardsLeft();
+      const farmRewardsLeft = multifarmRewardsLeft.filter(r => r.farmId === farmId);
+      
+      if (farmId === '115') {
+        console.log(`📊 ALL MULTIFARM REWARDS LEFT:`, multifarmRewardsLeft);
+        console.log(`🎯 FARM ${farmId} REWARDS LEFT:`, farmRewardsLeft);
+      }
+      
+      if (farmRewardsLeft.length === 0) {
+        if (farmId === '115') {
+          console.log(`❌ No rewards left for farm ${farmId}`);
+        }
+        return 0;
+      }
+
+      // Log each reward token in detail only for farm 115
+      if (farmId === '115') {
+        console.log(`💰 DETAILED REWARD BREAKDOWN FOR FARM ${farmId}:`);
+        for (const reward of farmRewardsLeft) {
+          console.log(`  Token: ${reward.token}`);
+          console.log(`  Amount: ${reward.amount}`);
+          console.log(`  Farm ID: ${reward.farmId}`);
+          console.log(`  ---`);
+        }
+      }
+
+      // Use cached price data if available - only fetch what we need
+      if (this.tokenPairs.length === 0) {
+        await this.fetchTokenPairs();
+      }
+      
+      // Calculate rewards dollar value
+      let rewardsDollarValue = 0;
+      for (const reward of farmRewardsLeft) {
+        const tokenPair = this.findTokenPrice(reward.token);
+        
+        if (farmId === '115') {
+          console.log(`🔍 Looking for price of token ${reward.token}:`, tokenPair);
+        }
+        
+        if (tokenPair && tokenPair.tokenAprice) {
+          const tokenPrice = parseFloat(tokenPair.tokenAprice);
+          const decimals = this.getTokenDecimals(reward.token);
+          const dollarValue = this.formatBalanceDollar(
+            { balance: reward.amount, decimals },
+            tokenPrice
+          );
+          rewardsDollarValue += dollarValue;
+          
+          // Show the actual conversion calculation using proper string manipulation only for farm 115
+          if (farmId === '115') {
+            const balanceStr = reward.amount;
+            let adjustedAmount: number;
+            
+            if (balanceStr.length <= decimals) {
+              const paddedBalance = balanceStr.padStart(decimals + 1, '0');
+              const integerPart = paddedBalance.slice(0, -decimals);
+              const decimalPart = paddedBalance.slice(-decimals);
+              adjustedAmount = parseFloat(`${integerPart}.${decimalPart}`);
+            } else {
+              const integerPart = balanceStr.slice(0, -decimals);
+              const decimalPart = balanceStr.slice(-decimals);
+              adjustedAmount = parseFloat(`${integerPart}.${decimalPart}`);
+            }
+            
+            const calculatedValue = adjustedAmount * tokenPrice;
+            
+            console.log(`💎 Reward token ${reward.token}:`, {
+              rawAmount: reward.amount,
+              decimals: decimals,
+              adjustedAmount: adjustedAmount.toFixed(6),
+              price: tokenPrice,
+              dollarValue: calculatedValue.toFixed(6),
+              formatBalanceDollarResult: dollarValue.toFixed(6)
+            });
+          }
+        } else {
+          if (farmId === '115') {
+            console.log(`⚠️ No price found for reward token: ${reward.token}`);
+            console.log(`📊 Available token pairs:`, this.tokenPairs.map(p => ({ token: p.tokenA, price: p.tokenAprice })));
+          }
+        }
+      }
+
+      // Calculate staked dollar value
+      const stakingTokenPair = this.findTokenPrice(stakingToken);
+      
+      if (farmId === '115') {
+        console.log(`🔍 Looking for price of staking token ${stakingToken}:`, stakingTokenPair);
+      }
+      
+      let stakedDollarValue = 0;
+      if (stakingTokenPair && stakingTokenPair.tokenAprice) {
+        const stakingTokenPrice = parseFloat(stakingTokenPair.tokenAprice);
+        const decimals = this.getTokenDecimals(stakingToken);
+        stakedDollarValue = this.formatBalanceDollar(
+          { balance: totalStaked, decimals },
+          stakingTokenPrice
+        );
+        
+        // Show the actual conversion calculation for staking token only for farm 115
+        if (farmId === '115') {
+          const rawStakedAmount = parseFloat(totalStaked);
+          const adjustedStakedAmount = rawStakedAmount / Math.pow(10, decimals);
+          const calculatedStakedValue = adjustedStakedAmount * stakingTokenPrice;
+          
+          console.log(`💰 Staking token ${stakingToken}:`, {
+            rawAmount: totalStaked,
+            decimals: decimals,
+            adjustedAmount: adjustedStakedAmount.toFixed(6),
+            price: stakingTokenPrice,
+            dollarValue: calculatedStakedValue.toFixed(6),
+            formatBalanceDollarResult: stakedDollarValue.toFixed(6)
+          });
+        }
+      } else {
+        if (farmId === '115') {
+          console.log(`⚠️ No price found for staking token: ${stakingToken}`);
+        }
+      }
+
+      if (farmId === '115') {
+        console.log(`📈 APR CALCULATION VALUES FOR FARM ${farmId}:`, {
+          rewardsDollarValue: rewardsDollarValue.toFixed(6),
+          stakedDollarValue: stakedDollarValue.toFixed(6),
+          rewardsCount: farmRewardsLeft.length,
+          stakingToken: stakingToken
+        });
+      }
+
+      if (stakedDollarValue === 0) {
+        if (farmId === '115') {
+          console.log(`⚠️ Staked dollar value is 0 for farm ${farmId}`);
+        }
+        return 0;
+      }
+
+      if (rewardsDollarValue === 0) {
+        if (farmId === '115') {
+          console.log(`⚠️ Rewards dollar value is 0 for farm ${farmId}`);
+        }
+        return 0;
+      }
+
+      // Get epochs remaining for this farm
+      const epochsRemaining = await this.getEpochsRemainingForFarm(farmId);
+      
+      if (farmId === '115') {
+        console.log(`⏰ EPOCHS REMAINING FOR FARM ${farmId}: ${epochsRemaining}`);
+      }
+      
+      if (epochsRemaining <= 0) {
+        if (farmId === '115') {
+          console.log(`⚠️ No epochs remaining for farm ${farmId}`);
+        }
+        return 0;
+      }
+      
+      // APR = (Rewards Value / Staked Value) × 100 × 365 / Epochs Remaining
+      const apr = ((rewardsDollarValue / stakedDollarValue) * 100 * 365) / epochsRemaining;
+      
+      if (farmId === '115') {
+        console.log(`🧮 APR CALCULATION BREAKDOWN:`, {
+          rewardsValue: rewardsDollarValue,
+          stakedValue: stakedDollarValue,
+          ratio: (rewardsDollarValue / stakedDollarValue).toFixed(6),
+          annualized: ((rewardsDollarValue / stakedDollarValue) * 100 * 365).toFixed(2),
+          epochsRemaining: epochsRemaining,
+          finalAPR: apr.toFixed(2)
+        });
+      }
+      
+      if (farmId === '115') {
+        console.log(`🎯 CALCULATED APR FOR FARM ${farmId}: ${Math.round(apr)}%`);
+      }
+      return Math.round(apr); // Return actual APR without decimals
+      
+    } catch (error) {
+      console.error(`❌ Error calculating multi-farm APR for farm ${farmId}:`, error);
+      return 0;
+    }
+  }
+
   async getAllFarms(): Promise<FarmInfo[]> {
     try {
+      // Check cache first
+      const now = Date.now();
+      if (this.farmsCache && (now - this.cacheTimestamp) < this.CACHE_DURATION) {
+        console.log('Using cached farms data');
+        return this.farmsCache;
+      }
+
       console.log('Calling getAllFarms on contract:', FARMS_CONTRACT_ADDRESS);
       
-      // Fetch both LP pairs and token pairs
-      await Promise.all([
-        this.fetchLPPairs(),
-        this.fetchTokenPairs()
-      ]);
+      // Only fetch token pairs if we don't have them cached (LP pairs not needed for farm 115)
+      if (this.tokenPairs.length === 0) {
+        await this.fetchTokenPairs();
+      }
       
       const query = this.controller.createQuery({
         contract: this.contractAddress,
@@ -187,46 +549,29 @@ export class SmartContractService {
 
       const response = await this.controller.runQuery(query);
       
-      console.log('Raw query response:', response);
+      // Raw query response processed silently
 
       const [result] = this.controller.parseQueryResponse(response);
-      console.log('Parsed result with ABI:', result);
+      // Parsed result processed silently
 
       const farms: FarmInfo[] = [];
       
       if (result && Array.isArray(result)) {
-        console.log('Processing', result.length, 'farms...');
+        // Processing farms silently
         
         for (let i = 0; i < result.length; i++) {
           const farmData = result[i];
-          console.log(`Farm ${i + 1} raw data:`, farmData);
           
           if (farmData && typeof farmData === 'object') {
             const farm = farmData.field0;
             const stakingToken = farmData.field1;
             const totalStaked = farmData.field2;
             const totalRewards = farmData.field3;
-            const isActive = farmData.field4;
+            let isActive = farmData.field4;
             
-            console.log(`Farm ${i + 1} parsed:`, {
-              farm,
-              stakingToken: stakingToken?.toString(),
-              totalStaked: totalStaked?.toString(),
-              totalRewards: totalRewards?.toString(),
-              isActive: isActive?.valueOf()
-            });
+            // Silent processing for farm 115
             
-            // Special debugging for farm 112
-            if (farm && farm.id?.toString() === '112') {
-              console.log('🔍 FARM 112 DEBUG:', {
-                farmId: farm.id?.toString(),
-                stakingToken: stakingToken?.toString(),
-                isActiveRaw: isActive,
-                isActiveType: typeof isActive,
-                isActiveValue: isActive?.valueOf(),
-                isActiveBoolean: Boolean(isActive?.valueOf())
-              });
-            }
+            // Silent processing for farms 112 and 115
             
             if (farm) {
               const stakingTokenStr = stakingToken?.toString() || '';
@@ -236,11 +581,40 @@ export class SmartContractService {
               // Check if this is a multi-reward farm (empty reward token)
               const isMultiReward = !rewardTokenStr || rewardTokenStr === '';
               let rewardTokens: string[] = [];
+              let calculatedAPR = 0;
               
               if (isMultiReward) {
                 // Fetch multi-reward tokens
                 rewardTokens = await this.getMultifarmRewardTokens(farm.id?.toString() || '0');
-                console.log(`Farm ${i + 1} is multi-reward with tokens:`, rewardTokens);
+                
+                // Silent processing for farm 115
+                
+                // For multi-reward farms, check if there are actually deposited rewards
+                // If there are reward tokens but no rewards left, consider it inactive
+                if (rewardTokens.length > 0) {
+                  try {
+                    // Use the same rewards left data that will be used for APR calculation
+                    const rewardsLeft = await this.getMultifarmsRewardsLeft();
+                    const farmRewardsLeft = rewardsLeft.filter(r => r.farmId === farm.id?.toString());
+                    const hasDepositedRewards = farmRewardsLeft.some(r => r.amount !== '0');
+                    
+                    // Silent processing for farm 115
+                    
+                    // Override isActive based on whether rewards are actually deposited
+                    if (hasDepositedRewards) {
+                      isActive = true;
+                      
+                      // Calculate proper APR for multi-farm using dollar values
+                      calculatedAPR = await this.calculateMultiFarmAPR(
+                        farm.id?.toString() || '0',
+                        stakingTokenStr,
+                        totalStakedStr
+                      );
+                    }
+                  } catch (error) {
+                    console.error(`Error checking rewards left for farm ${i + 1}:`, error);
+                  }
+                }
               }
               
               // Check if this is an LP token (contains USDC)
@@ -265,13 +639,7 @@ export class SmartContractService {
                 totalStakedUSD = tokenPrice > 0 ? this.calculateTotalStakedUSDSingleTokenWithDecimals(totalStakedStr, tokenPrice, decimals) : 0;
               }
               
-              console.log(`Farm ${i + 1} price data:`, {
-                stakingToken: stakingTokenStr,
-                isLPToken,
-                lpPrice,
-                tokenPrice: isLPToken ? 'N/A' : (this.findTokenPrice(stakingTokenStr)?.tokenAprice || 'N/A'),
-                totalStakedUSD
-              });
+              // Silent processing for farm 115 price data
               
               const farmInfo: FarmInfo = {
                 farm: {
@@ -284,24 +652,19 @@ export class SmartContractService {
                 stakingToken: stakingTokenStr,
                 totalStaked: totalStakedStr,
                 totalRewards: totalRewards?.toString() || '0',
-                isActive: isActive?.valueOf() || false,
+                isActive: Boolean(isActive?.valueOf()) || false,
                 lpPrice: isLPToken ? lpPrice : undefined,
                 totalStakedUSD,
                 rewardTokens: isMultiReward ? rewardTokens : undefined,
-                isMultiReward
+                isMultiReward,
+                calculatedAPR: isMultiReward ? calculatedAPR : undefined
               };
               
-              console.log(`Farm ${i + 1} final:`, farmInfo);
+              // Silent processing for farm 115 final info
               
-              // Special debugging for farm 112 final info
-              if (farmInfo.farm.id === '112') {
-                console.log('🔍 FARM 112 FINAL INFO:', {
-                  id: farmInfo.farm.id,
-                  stakingToken: farmInfo.stakingToken,
-                  isActive: farmInfo.isActive,
-                  totalStakedUSD: farmInfo.totalStakedUSD
-                });
-              }
+              // Silent processing for farm 112 final info
+
+              // Silent processing for farm 115 final info
               
               farms.push(farmInfo);
             }
@@ -309,7 +672,10 @@ export class SmartContractService {
         }
       }
 
-      console.log('Processed farms:', farms);
+      // Cache the result
+      this.farmsCache = farms;
+      this.cacheTimestamp = Date.now();
+      
       return farms;
       
     } catch (error) {
@@ -429,7 +795,12 @@ export class SmartContractService {
 
   async getMultifarmsRewardsLeft(): Promise<MultiFarmRewardsLeft[]> {
     try {
-      console.log('Calling getMultifarmsRewardsLeft');
+      // Return cached data if available
+      if (this.multifarmRewardsLeftCache) {
+        return this.multifarmRewardsLeftCache;
+      }
+
+      // Fetching multifarm rewards left
       
       const query = this.controller.createQuery({
         contract: this.contractAddress,
@@ -440,7 +811,7 @@ export class SmartContractService {
       const response = await this.controller.runQuery(query);
       const [result] = this.controller.parseQueryResponse(response);
       
-      console.log('Multifarms rewards left result:', result);
+      // Process multifarms rewards left silently
 
       const rewardsLeft: MultiFarmRewardsLeft[] = [];
       
@@ -467,13 +838,29 @@ export class SmartContractService {
         }
       }
 
-      console.log('Processed multifarms rewards left:', rewardsLeft);
+      // Cache the result
+      this.multifarmRewardsLeftCache = rewardsLeft;
       return rewardsLeft;
       
     } catch (error) {
       console.error('Error calling getMultifarmsRewardsLeft:', error);
       return [];
     }
+  }
+
+  async fetchMultiFarms2RewardsLeft(): Promise<MultiFarmRewardsLeft[]> {
+    // Use the cached multifarm rewards left data
+    return this.getMultifarmsRewardsLeft();
+  }
+
+  // Method to clear cache when needed
+  clearCache(): void {
+    this.multifarmRewardsLeftCache = null;
+    this.farmsCache = null;
+    this.lpPairs = [];
+    this.tokenPairs = [];
+    this.cacheTimestamp = 0;
+    console.log('🗑️ Cache cleared');
   }
 
   async getLastRewardedEpoch(farmId: string): Promise<number> {

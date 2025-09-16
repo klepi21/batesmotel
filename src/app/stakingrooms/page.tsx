@@ -33,6 +33,16 @@ const StakingRoomsPage = () => {
 
         // Fetch all farms data
         const farmsData = await smartContractService.getAllFarms();
+        
+        // Log farm 115 specifically from the fetched data
+        const farm115 = farmsData.find(farm => farm.farm.id === '115');
+        if (farm115) {
+          console.log('🔍 STAKING PAGE - FARM 115 FROM FETCH:', farm115);
+        } else {
+          console.log('🔍 STAKING PAGE - FARM 115 NOT FOUND in fetched data');
+          console.log('Available farms:', farmsData.map(f => f.farm.id));
+        }
+        
         setFarms(farmsData);
 
         // Fetch user-specific data if logged in
@@ -177,9 +187,16 @@ const StakingRoomsPage = () => {
     unlockPanelManager.openUnlockPanel();
   };
 
-  // Simplified APR calculation
+  // APR calculation - use calculated APR for multi-farms, simple calculation for others
   const calculateAPR = (farm: FarmInfo): number => {
     try {
+      // For multi-farm pools, use the calculated APR from smart contract service
+      if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
+        console.log(`Using calculated APR for farm ${farm.farm.id}:`, farm.calculatedAPR);
+        return farm.calculatedAPR;
+      }
+      
+      // For regular farms, use simple calculation
       const totalStaked = parseFloat(farm.totalStaked) / Math.pow(10, 18);
       const totalRewards = parseFloat(farm.totalRewards) / Math.pow(10, 18);
       
@@ -322,12 +339,26 @@ const StakingRoomsPage = () => {
             {!loading && !error && farms.length > 0 && (
               <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                  {/* Filter farms to show only NON-USDC farms and hide farm #43 */}
+                  {/* Filter farms to show ONLY farm 115 */}
                   {farms
-                    .filter(farm => !farm.stakingToken.includes('USDC'))
-                    .filter(farm => farm.farm.id !== '43')
+                    .filter(farm => farm.farm.id === '115')
                     .map((farm, index) => {
                     const farmColor = getFarmColor(farm.farm.id);
+                    
+                    // Detailed logging for farm 115
+                    console.log('🔍 STAKING PAGE - FARM 115 DETAILED INFO:', {
+                      farmId: farm.farm.id,
+                      stakingToken: farm.stakingToken,
+                      totalStaked: farm.totalStaked,
+                      totalRewards: farm.totalRewards,
+                      isActive: farm.isActive,
+                      isMultiReward: farm.isMultiReward,
+                      rewardTokens: farm.rewardTokens,
+                      totalStakedUSD: farm.totalStakedUSD,
+                      farm: farm.farm,
+                      fullFarmObject: farm
+                    });
+                    
                     return (
                       <motion.div
                         key={farm.farm.id}
