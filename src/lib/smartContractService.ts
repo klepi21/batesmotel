@@ -891,7 +891,8 @@ export class SmartContractService {
 
   createHarvestTransaction(farmId: string, userAddress: string, chainId: string = '1'): Transaction {
     
-    const functionName = Buffer.from('harvest').toString('hex');
+    // Use the function name directly without hex encoding
+    const functionName = 'harvest';
     const farmIdHex = BigInt(farmId).toString(16).padStart(64, '0');
     
     const data = `${functionName}@${farmIdHex}`;
