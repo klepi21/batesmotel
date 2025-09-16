@@ -469,16 +469,30 @@ const StakingRoomsPage = () => {
                           >
                             STAKE
                           </button>
+                          
+                          {/* Unstake Button - Disabled if no tokens staked */}
                           <button
                             onClick={() => handleUnstakeClick(farm)}
-                            className="w-full py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors font-mono border-2 border-red-500 tracking-wide text-xs sm:text-sm"
+                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0}
+                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
+                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0
+                                ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700 text-white border-red-500'
+                            }`}
                             style={{ imageRendering: 'pixelated' }}
                           >
                             UNSTAKE
                           </button>
+                          
+                          {/* Harvest Button - Disabled if no rewards available */}
                           <button
                             onClick={() => handleHarvestClick(farm)}
-                            className="w-full py-2 sm:py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition-colors font-mono border-2 border-yellow-500 tracking-wide text-xs sm:text-sm"
+                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0}
+                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
+                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0
+                                ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
+                                : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'
+                            }`}
                             style={{ imageRendering: 'pixelated' }}
                           >
                             HARVEST
