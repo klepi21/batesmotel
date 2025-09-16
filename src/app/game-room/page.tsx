@@ -18,22 +18,26 @@ const GameRoomPage = () => {
     <AuthRedirectWrapper requireAuth={false}>
       <div className="relative w-full h-screen bg-black overflow-hidden">
         {/* Desktop Background Image */}
-        <Image
-          src="/assets/img/GameRoom.png"
-          alt="Game Room"
-          fill
-          className="object-cover object-center hidden sm:block"
-          priority
-        />
+        <div className="absolute inset-0 hidden md:block">
+          <Image
+            src="/assets/img/GameRoom.png"
+            alt="Game Room"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+        </div>
         
         {/* Mobile Background Image - Full Layout */}
-        <Image
-          src="/assets/img/mob/GameRoommob.png"
-          alt="Game Room Mobile"
-          fill
-          className="object-contain object-center block sm:hidden"
-          priority
-        />
+        <div className="absolute inset-0 block md:hidden">
+          <Image
+            src="/assets/img/mob/GameRoommob.png"
+            alt="Game Room Mobile"
+            fill
+            className="object-contain object-center"
+            priority
+          />
+        </div>
         
         {/* Overlay for better contrast */}
         <div className="absolute inset-0 bg-black bg-opacity-20"></div>
