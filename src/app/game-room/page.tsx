@@ -22,7 +22,7 @@ const GameRoomPage = () => {
           src="/assets/img/GameRoom.png"
           alt="Game Room"
           fill
-          className="object-contain object-center hidden sm:block"
+          className="object-cover object-center hidden sm:block"
           priority
         />
         
