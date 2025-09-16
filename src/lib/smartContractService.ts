@@ -101,14 +101,24 @@ export class SmartContractService {
 
   async fetchLPPairs(): Promise<LPPair[]> {
     try {
-      console.log('Fetching LP pairs from API...');
-      const response = await fetch('https://api.web3ninja.eu/api/lppairs.php');
+      console.log('Fetching LP pairs from MultiversX MEX API...');
+      const response = await fetch('https://api.multiversx.com/mex/pairs?size=400');
       const data = await response.json();
-      this.lpPairs = data;
+      
+      // Convert MultiversX MEX API format to our LPPair format
+      const lpPairs: LPPair[] = data.map((pair: any) => ({
+        lpname: pair.name,
+        lpidentifier: pair.id,
+        lpprice: pair.price.toString(),
+        token1lp: pair.baseId,
+        token2lp: pair.quoteId
+      }));
+      
+      this.lpPairs = lpPairs;
       console.log('LP pairs loaded:', this.lpPairs.length, 'pairs');
-      return data;
+      return lpPairs;
     } catch (error) {
-      console.error('Error fetching LP pairs:', error);
+      console.error('Error fetching LP pairs from MultiversX MEX API:', error);
       return [];
     }
   }
@@ -231,21 +241,13 @@ export class SmartContractService {
     const balanceStr = balance.balance;
     const decimals = balance.decimals;
     
-    // Convert to proper decimal format by moving decimal point
-    if (balanceStr.length <= decimals) {
-      // If balance is smaller than decimals, pad with zeros
-      const paddedBalance = balanceStr.padStart(decimals + 1, '0');
-      const integerPart = paddedBalance.slice(0, -decimals);
-      const decimalPart = paddedBalance.slice(-decimals);
-      const balanceNum = parseFloat(`${integerPart}.${decimalPart}`);
-      return balanceNum * price;
-    } else {
-      // Split the balance string at the decimal position
-      const integerPart = balanceStr.slice(0, -decimals);
-      const decimalPart = balanceStr.slice(-decimals);
-      const balanceNum = parseFloat(`${integerPart}.${decimalPart}`);
-      return balanceNum * price;
-    }
+    // Handle scientific notation by converting to regular number first
+    const balanceNum = parseFloat(balanceStr);
+    
+    // Convert to proper decimal format by dividing by 10^decimals
+    const adjustedBalance = balanceNum / Math.pow(10, decimals);
+    
+    return adjustedBalance * price;
   }
 
   // Get token decimals from MultiversX API data
@@ -391,26 +393,15 @@ export class SmartContractService {
           );
           rewardsDollarValue += dollarValue;
           
-          // Show the actual conversion calculation using proper string manipulation only for farm 115
+          // Show the actual conversion calculation using proper decimal handling only for farm 115
           if (farmId === '115') {
-            const balanceStr = reward.amount;
-            let adjustedAmount: number;
-            
-            if (balanceStr.length <= decimals) {
-              const paddedBalance = balanceStr.padStart(decimals + 1, '0');
-              const integerPart = paddedBalance.slice(0, -decimals);
-              const decimalPart = paddedBalance.slice(-decimals);
-              adjustedAmount = parseFloat(`${integerPart}.${decimalPart}`);
-            } else {
-              const integerPart = balanceStr.slice(0, -decimals);
-              const decimalPart = balanceStr.slice(-decimals);
-              adjustedAmount = parseFloat(`${integerPart}.${decimalPart}`);
-            }
-            
+            const rawAmount = parseFloat(reward.amount);
+            const adjustedAmount = rawAmount / Math.pow(10, decimals);
             const calculatedValue = adjustedAmount * tokenPrice;
             
             console.log(`💎 Reward token ${reward.token}:`, {
               rawAmount: reward.amount,
+              rawAmountParsed: rawAmount,
               decimals: decimals,
               adjustedAmount: adjustedAmount.toFixed(6),
               price: tokenPrice,
@@ -450,6 +441,7 @@ export class SmartContractService {
           
           console.log(`💰 Staking token ${stakingToken}:`, {
             rawAmount: totalStaked,
+            rawAmountParsed: rawStakedAmount,
             decimals: decimals,
             adjustedAmount: adjustedStakedAmount.toFixed(6),
             price: stakingTokenPrice,

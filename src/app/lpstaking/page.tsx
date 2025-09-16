@@ -80,15 +80,27 @@ const LpStakingPage = () => {
     return userReward ? formatBalance(userReward.harvestableAmount) : '0';
   };
 
-  // Helper function to calculate simple APR (placeholder - would need price data for real calculation)
-  const calculateAPR = (farm: FarmInfo) => {
-    const totalStaked = parseFloat(farm.totalStaked) / Math.pow(10, 18);
-    const totalRewards = parseFloat(farm.totalRewards) / Math.pow(10, 18);
-    
-    if (totalStaked > 0) {
-      return ((totalRewards / totalStaked) * 100).toFixed(2);
+  // APR calculation - use calculated APR for multi-farms, simple calculation for others
+  const calculateAPR = (farm: FarmInfo): number => {
+    try {
+      // For multi-farm pools, use the calculated APR from smart contract service
+      if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
+        console.log(`Using calculated APR for farm ${farm.farm.id}:`, farm.calculatedAPR);
+        return farm.calculatedAPR;
+      }
+      
+      // For regular farms, use simple calculation
+      const totalStaked = parseFloat(farm.totalStaked) / Math.pow(10, 18);
+      const totalRewards = parseFloat(farm.totalRewards) / Math.pow(10, 18);
+      
+      if (totalStaked === 0) return 0;
+      
+      // Simple APR calculation (annualized)
+      const apr = (totalRewards / totalStaked) * 100 * 365;
+      return Math.round(apr); // Round to whole number
+    } catch {
+      return 0;
     }
-    return '0.00';
   };
 
   // Generate a color based on farm ID for consistent styling
@@ -306,12 +318,27 @@ const LpStakingPage = () => {
             {!loading && !error && farms.length > 0 && (
               <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                  {/* Filter farms to show only USDC farms and hide farm #43 */}
+                  {/* Filter farms to show ONLY farm 116 */}
                   {farms
-                    .filter(farm => farm.stakingToken.includes('USDC'))
-                    .filter(farm => farm.farm.id !== '43')
+                    .filter(farm => farm.farm.id === '116')
                     .map((farm, index) => {
                     const farmColor = getFarmColor(farm.farm.id);
+                    
+                    // Detailed logging for farm 116
+                    console.log('🔍 LP STAKING PAGE - FARM 116 DETAILED INFO:', {
+                      farmId: farm.farm.id,
+                      stakingToken: farm.stakingToken,
+                      totalStaked: farm.totalStaked,
+                      totalRewards: farm.totalRewards,
+                      isActive: farm.isActive,
+                      isMultiReward: farm.isMultiReward,
+                      rewardTokens: farm.rewardTokens,
+                      totalStakedUSD: farm.totalStakedUSD,
+                      calculatedAPR: farm.calculatedAPR,
+                      farm: farm.farm,
+                      fullFarmObject: farm
+                    });
+                    
                     return (
                       <motion.div
                         key={farm.farm.id}
@@ -343,11 +370,10 @@ const LpStakingPage = () => {
                           </div>
                           <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
                             <div className="flex items-center justify-center space-x-2">
-                              {/* For LP tokens, show the underlying tokens */}
+                              {/* For LP tokens, show the underlying tokens using new MEX pairs API */}
                               {(() => {
-                                // Find the LP pair to get token1lp and token2lp
-                                const lpPair = farms.find(f => f.stakingToken === farm.stakingToken)?.lpPrice ? 
-                                  smartContractService.findLPPair(farm.stakingToken) : null;
+                                // Find the LP pair to get baseId and quoteId from MEX pairs
+                                const lpPair = smartContractService.findLPPair(farm.stakingToken);
                                 
                                 if (lpPair) {
                                   // Show the two underlying tokens on the left, reward tokens on the right
@@ -483,16 +509,30 @@ const LpStakingPage = () => {
                           >
                             STAKE
                           </button>
+                          
+                          {/* Unstake Button - Disabled if no tokens staked */}
                           <button
                             onClick={() => handleUnstakeClick(farm)}
-                            className="w-full py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors font-mono border-2 border-red-500 tracking-wide text-xs sm:text-sm"
+                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0}
+                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
+                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0
+                                ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700 text-white border-red-500'
+                            }`}
                             style={{ imageRendering: 'pixelated' }}
                           >
                             UNSTAKE
                           </button>
+                          
+                          {/* Harvest Button - Disabled if no rewards available */}
                           <button
                             onClick={() => handleHarvestClick(farm)}
-                            className="w-full py-2 sm:mb-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition-colors font-mono border-2 border-yellow-500 tracking-wide text-xs sm:text-sm"
+                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0}
+                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
+                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0
+                                ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
+                                : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'
+                            }`}
                             style={{ imageRendering: 'pixelated' }}
                           >
                             HARVEST
