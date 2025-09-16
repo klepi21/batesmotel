@@ -477,7 +477,7 @@ const StakingRoomsPage = () => {
                                         e.currentTarget.style.display = 'none';
                                       }}
                                     />
-                                    <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)} {getTokenSymbol(farm.stakingToken)}</span>
+                                    <span>{Math.round(parseFloat(formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)))}</span>
                                   </div>
                                   <span className="text-gray-400">)</span>
                                 </>
@@ -491,7 +491,7 @@ const StakingRoomsPage = () => {
                                       e.currentTarget.style.display = 'none';
                                     }}
                                   />
-                                  <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)} {getTokenSymbol(farm.stakingToken)}</span>
+                                  <span>{Math.round(parseFloat(formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)))}</span>
                                 </div>
                               )}
                             </div>
