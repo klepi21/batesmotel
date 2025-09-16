@@ -39,7 +39,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       if (isOpen && modalType === 'stake' && address && stakingToken) {
         try {
           setBalanceLoading(true);
-          console.log('Fetching balance for token:', stakingToken, 'address:', address);
+          // Fetching balance for token
           
           // Fetch user's token balance from MultiversX API
           const response = await fetch(`${network.apiAddress}/accounts/${address}/tokens/${stakingToken}`);
@@ -47,14 +47,14 @@ export const StakingModal: React.FC<StakingModalProps> = ({
           if (response.ok) {
             const tokenData = await response.json();
             const balance = tokenData.balance || '0';
-            console.log('Fetched token balance:', balance);
+            // Fetched token balance
             setUserBalance(balance);
           } else {
-            console.log('Token not found or no balance, setting to 0');
+            // Token not found or no balance, setting to 0
             setUserBalance('0');
           }
         } catch (error) {
-          console.error('Error fetching user balance:', error);
+          // Error fetching user balance
           setUserBalance('0');
         } finally {
           setBalanceLoading(false);
@@ -143,7 +143,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
         onSuccess?.();
       }
     } catch (error) {
-      console.error(`Error during ${modalType}:`, error);
+      // Error during transaction
       toast.error(`Failed to ${modalType} tokens`);
     } finally {
       setLoading(false);
@@ -162,18 +162,18 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const setMaxAmount = () => {
     if (modalType === 'stake') {
       const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
-      console.log('Setting max amount for stake:', userBalance, 'decimals:', decimals);
+      // Setting max amount for stake
       
       // Simply use the formatted balance that's already displayed
       const maxAmount = formatBalance(userBalance, decimals);
-      console.log('Formatted max amount:', maxAmount);
+      // Formatted max amount
       setAmount(maxAmount);
     } else {
       const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
-      console.log('Setting max amount for unstake:', userStakedBalance, 'decimals:', decimals);
+      // Setting max amount for unstake
       
       const maxAmount = formatBalance(userStakedBalance, decimals);
-      console.log('Formatted max amount:', maxAmount);
+      // Formatted max amount
       setAmount(maxAmount);
     }
   };

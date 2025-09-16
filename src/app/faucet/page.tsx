@@ -47,14 +47,13 @@ export default function FaucetPage() {
   const router = useRouter();
 
   const handleConnect = () => {
-    console.log('Redirecting to unlock page for connection...');
+    // Redirecting to unlock page for connection
     router.push(`${RouteNamesEnum.unlock}?from=faucet`);
   };
 
   const fetchFaucetInfo = useCallback(async () => {
     try {
-      console.log('Fetching faucet info for address:', address);
-      console.log('Network API address:', network.apiAddress);
+      // Fetching faucet info
       
       const provider = new ProxyNetworkProvider(network.apiAddress);
       const contract = new SmartContract({
@@ -68,7 +67,7 @@ export default function FaucetPage() {
       });
 
       const queryResponse = await provider.queryContract(query);
-      console.log('Raw query response:', queryResponse);
+      // Raw query response
       
       // For now, let's set some default values to avoid the parsing error
       setFaucetInfo({
@@ -79,9 +78,9 @@ export default function FaucetPage() {
         faucet_balance: '10000000000000000000' // 10 tokens in wei
       });
       
-      console.log('Set default faucet info for testing');
+      // Set default faucet info for testing
     } catch (error) {
-      console.error('Error fetching faucet info:', error);
+      // Error fetching faucet info
       // Set default values on error for now
       setFaucetInfo({
         token: 'RARE-99e8b0',
@@ -141,7 +140,7 @@ export default function FaucetPage() {
         setDepositAmount('');
       }
     } catch (error) {
-      console.error('Error depositing:', error);
+      // Error depositing
       toast.error('Failed to deposit tokens');
     } finally {
       setIsDepositing(false);
@@ -152,8 +151,7 @@ export default function FaucetPage() {
     if (!isLoggedIn) return;
 
     try {
-      console.log('Starting claim process...');
-      console.log('Current faucet info:', faucetInfo);
+      // Starting claim process
       setIsLoading(true);
       
       const transaction = new Transaction({
@@ -165,7 +163,7 @@ export default function FaucetPage() {
         chainID: network.chainId || '1'
       });
 
-      console.log('Transaction data:', transaction);
+      // Transaction data
 
       const { sessionId } = await signAndSendTransactions({
         transactions: [transaction],
@@ -176,14 +174,14 @@ export default function FaucetPage() {
         }
       });
 
-      console.log('Transaction sent with sessionId:', sessionId);
+      // Transaction sent
 
       if (sessionId) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await fetchFaucetInfo();
       }
     } catch (error) {
-      console.error('Error claiming:', error);
+      // Error claiming
       toast.error('Failed to claim tokens');
     } finally {
       setIsLoading(false);

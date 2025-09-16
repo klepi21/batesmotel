@@ -12,7 +12,7 @@ export const InitAppWrapper = ({ children }: PropsWithChildren) => {
         await initAppSingleton(config);
         setIsInitialized(true);
       } catch (err) {
-        console.error(err);
+        // Error initializing app
       }
     };
 

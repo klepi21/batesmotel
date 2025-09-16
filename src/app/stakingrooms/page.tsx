@@ -35,14 +35,6 @@ const StakingRoomsPage = () => {
         // Fetch all farms data
         const farmsData = await smartContractService.getAllFarms();
         
-        // Log farm 115 specifically from the fetched data
-        const farm115 = farmsData.find(farm => farm.farm.id === '115');
-        if (farm115) {
-          console.log('🔍 STAKING PAGE - FARM 115 FROM FETCH:', farm115);
-        } else {
-          console.log('🔍 STAKING PAGE - FARM 115 NOT FOUND in fetched data');
-          console.log('Available farms:', farmsData.map(f => f.farm.id));
-        }
         
         setFarms(farmsData);
 
@@ -56,16 +48,13 @@ const StakingRoomsPage = () => {
             setUserRewards(userRewardsData);
 
             // Check if user has enough RARE tokens (10 RARE required)
-            console.log('🔍 STAKING PAGE - Checking RARE balance for address:', address);
             const hasRare = await smartContractService.hasEnoughRareTokens(address);
-            console.log('🔍 STAKING PAGE - RARE balance check result:', hasRare);
             setHasEnoughRare(hasRare);
           } catch (userError) {
-            console.error('Error fetching user data:', userError);
+            // Error fetching user data
           }
         }
       } catch (err) {
-        console.error('Error fetching farms data:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch farms data');
     } finally {
       setLoading(false);
@@ -188,7 +177,7 @@ const StakingRoomsPage = () => {
         await fetchData();
       }
     } catch (error) {
-      console.error('Error during harvest:', error);
+      // Error during harvest
       toast.error('Failed to harvest rewards');
     }
   };
@@ -202,11 +191,11 @@ const StakingRoomsPage = () => {
   const handleConnectWallet = () => {
     const unlockPanelManager = UnlockPanelManager.init({
       loginHandler: () => {
-        console.log('User logged in successfully');
+        // User logged in successfully
         // Data will be refreshed automatically via useEffect dependency on isLoggedIn
       },
       onClose: () => {
-        console.log('Unlock panel closed');
+        // Unlock panel closed
       }
     });
     
@@ -218,7 +207,7 @@ const StakingRoomsPage = () => {
     try {
       // For multi-farm pools, use the calculated APR from smart contract service
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
-        console.log(`Using calculated APR for farm ${farm.farm.id}:`, farm.calculatedAPR);
+        // Using calculated APR
         return farm.calculatedAPR;
       }
       
@@ -315,7 +304,7 @@ const StakingRoomsPage = () => {
                   <button
                     onClick={async () => {
                       if (address) {
-                        console.log('🔄 Manually refreshing RARE balance...');
+                        // Manually refreshing RARE balance
                         const hasRare = await smartContractService.hasEnoughRareTokens(address);
                         setHasEnoughRare(hasRare);
                       }
@@ -394,18 +383,6 @@ const StakingRoomsPage = () => {
                     const farmColor = getFarmColor(farm.farm.id);
                     
                     // Detailed logging for farm 115
-                    console.log('🔍 STAKING PAGE - FARM 115 DETAILED INFO:', {
-                      farmId: farm.farm.id,
-                      stakingToken: farm.stakingToken,
-                      totalStaked: farm.totalStaked,
-                      totalRewards: farm.totalRewards,
-                      isActive: farm.isActive,
-                      isMultiReward: farm.isMultiReward,
-                      rewardTokens: farm.rewardTokens,
-                      totalStakedUSD: farm.totalStakedUSD,
-                      farm: farm.farm,
-                      fullFarmObject: farm
-                    });
                     
                     return (
                       <motion.div

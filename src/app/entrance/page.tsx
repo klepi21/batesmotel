@@ -39,8 +39,8 @@ const EntrancePage = () => {
           fill
           className="object-contain object-center"
           priority
-          onError={(e) => console.error('Mobile image failed to load:', e)}
-          onLoad={() => console.log('Mobile image loaded successfully')}
+          onError={(e) => {}}
+          onLoad={() => {}}
         />
       ) : (
         <Image
@@ -49,8 +49,8 @@ const EntrancePage = () => {
           fill
           className="object-contain object-center"
           priority
-          onError={(e) => console.error('Desktop image failed to load:', e)}
-          onLoad={() => console.log('Desktop image loaded successfully')}
+          onError={(e) => {}}
+          onLoad={() => {}}
         />
       )}
       

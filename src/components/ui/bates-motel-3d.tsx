@@ -186,7 +186,7 @@ const BatesMotel3D = () => {
 
   // Connect functionality
   const handleConnect = () => {
-    console.log('handleConnect called, isLoggedIn:', isLoggedIn);
+    // handleConnect called
     
     // Navigate to the dedicated unlock page instead
     router.push(`${RouteNamesEnum.unlock}?from=lobby`);
@@ -308,7 +308,7 @@ const BatesMotel3D = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Left area clicked - navigating to faucet');
+                        // Left area clicked - navigating to faucet
                         router.push(RouteNamesEnum.faucet);
                       }}
                       title="Click to visit Faucet"
@@ -321,7 +321,7 @@ const BatesMotel3D = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Right area clicked - navigating to game room');
+                        // Right area clicked - navigating to game room
                         router.push(RouteNamesEnum.gameroom);
                       }}
                       title="Click to enter Game Room"

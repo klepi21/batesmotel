@@ -20,6 +20,7 @@ const LpStakingPage = () => {
   const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasEnoughRare, setHasEnoughRare] = useState<boolean>(false);
   
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,12 +44,16 @@ const LpStakingPage = () => {
 
           const userRewardsData = await smartContractService.getUserRewardsInfo(address);
           setUserRewards(userRewardsData);
+
+          // Check if user has enough RARE tokens (10 RARE required)
+          const hasRare = await smartContractService.hasEnoughRareTokens(address);
+          setHasEnoughRare(hasRare);
         } catch (userError) {
-          console.error('Error fetching user data:', userError);
+          // Error fetching user data
         }
       }
     } catch (err) {
-      console.error('Error fetching farms data:', err);
+      // Error fetching farms data
       setError(err instanceof Error ? err.message : 'Failed to fetch farms data');
     } finally {
       setLoading(false);
@@ -83,16 +88,26 @@ const LpStakingPage = () => {
   // APR calculation - use calculated APR for multi-farms, simple calculation for others
   const calculateAPR = (farm: FarmInfo): number => {
     try {
-      // For multi-farm pools, use the calculated APR from smart contract service
-      if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
-        console.log(`🔍 LP STAKING - Using calculated APR for farm ${farm.farm.id}:`, farm.calculatedAPR);
-        console.log(`🔍 LP STAKING - Farm ${farm.farm.id} data:`, {
+      // Log farm 116 details for debugging
+      if (farm.farm.id === '116') {
+        console.log('🔍 LP STAKING - FARM 116 APR CALCULATION:', {
+          farmId: farm.farm.id,
+          stakingToken: farm.stakingToken,
           totalStaked: farm.totalStaked,
           totalRewards: farm.totalRewards,
+          isMultiReward: farm.isMultiReward,
+          calculatedAPR: farm.calculatedAPR,
+          rewardTokens: farm.rewardTokens,
           totalStakedUSD: farm.totalStakedUSD,
-          isActive: farm.isActive,
-          rewardTokens: farm.rewardTokens
+          isActive: farm.isActive
         });
+      }
+
+      // For multi-farm pools, use the calculated APR from smart contract service
+      if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
+        if (farm.farm.id === '116') {
+          console.log('🔍 LP STAKING - Using calculated APR for farm 116:', farm.calculatedAPR);
+        }
         return farm.calculatedAPR;
       }
       
@@ -100,12 +115,32 @@ const LpStakingPage = () => {
       const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
       const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
       
-      if (totalStakedNum === 0) return 0;
+      if (farm.farm.id === '116') {
+        console.log('🔍 LP STAKING - Simple APR calculation for farm 116:', {
+          totalStakedNum,
+          totalRewardsNum,
+          totalStakedRaw: farm.totalStaked,
+          totalRewardsRaw: farm.totalRewards
+        });
+      }
+      
+      if (totalStakedNum === 0) {
+        if (farm.farm.id === '116') {
+          console.log('🔍 LP STAKING - Farm 116 totalStaked is 0, returning 0 APR');
+        }
+        return 0;
+      }
       
       // Simple APR calculation (annualized)
       const apr = (totalRewardsNum / totalStakedNum) * 100 * 365;
+      if (farm.farm.id === '116') {
+        console.log('🔍 LP STAKING - Farm 116 calculated APR:', apr);
+      }
       return Math.round(apr); // Round to whole number
-    } catch {
+    } catch (error) {
+      if (farm.farm.id === '116') {
+        console.log('🔍 LP STAKING - Error in APR calculation for farm 116:', error);
+      }
       return 0;
     }
   };
@@ -123,6 +158,13 @@ const LpStakingPage = () => {
       toast.error('Please connect your wallet first');
       return;
     }
+    
+    // Check if user has enough RARE tokens
+    if (!hasEnoughRare) {
+      toast.error('You need at least 10 RARE tokens to perform staking operations');
+      return;
+    }
+    
     setSelectedFarm(farm);
     setModalType('stake');
     setModalOpen(true);
@@ -131,6 +173,12 @@ const LpStakingPage = () => {
   const handleUnstakeClick = (farm: FarmInfo) => {
     if (!isLoggedIn) {
       toast.error('Please connect your wallet first');
+      return;
+    }
+    
+    // Check if user has enough RARE tokens
+    if (!hasEnoughRare) {
+      toast.error('You need at least 10 RARE tokens to perform staking operations');
       return;
     }
     
@@ -151,6 +199,12 @@ const LpStakingPage = () => {
       return;
     }
 
+    // Check if user has enough RARE tokens
+    if (!hasEnoughRare) {
+      toast.error('You need at least 10 RARE tokens to perform staking operations');
+      return;
+    }
+
     try {
       // Check harvestable rewards
       const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
@@ -161,18 +215,20 @@ const LpStakingPage = () => {
         return;
       }
 
-      const transaction = smartContractService.createHarvestTransaction(
+      // Create RARE fee transaction and harvest transaction
+      const rareFeeTransaction = smartContractService.createRareFeeTransaction(address, network.chainId);
+      const harvestTransaction = smartContractService.createHarvestTransaction(
         farm.farm.id,
         address,
         network.chainId
       );
 
       const { sessionId } = await signAndSendTransactions({
-        transactions: [transaction],
+        transactions: [rareFeeTransaction, harvestTransaction],
         transactionsDisplayInfo: {
-          processingMessage: 'Processing harvest transaction',
+          processingMessage: 'Processing harvest transaction (including 10 RARE fee)',
           errorMessage: 'Error during harvest',
-          successMessage: 'Successfully harvested rewards!'
+          successMessage: 'Successfully harvested rewards! (10 RARE fee paid)'
         }
       });
 
@@ -182,7 +238,7 @@ const LpStakingPage = () => {
         await fetchData();
       }
     } catch (error) {
-      console.error('Error during harvest:', error);
+      // Error during harvest
       toast.error('Failed to harvest rewards');
     }
   };
@@ -196,11 +252,11 @@ const LpStakingPage = () => {
   const handleConnectWallet = () => {
     const unlockPanelManager = UnlockPanelManager.init({
       loginHandler: () => {
-        console.log('User logged in successfully');
+        // User logged in successfully
         // Data will be refreshed automatically via useEffect dependency on isLoggedIn
       },
       onClose: () => {
-        console.log('Unlock panel closed');
+        // Unlock panel closed
       }
     });
     
@@ -270,6 +326,36 @@ const LpStakingPage = () => {
 
         {/* Smart Contract Data Display */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          {/* RARE Fee Status */}
+          {isLoggedIn && address && (
+            <div className="mb-4 sm:mb-6">
+              <motion.div
+                className="bg-gradient-to-r from-orange-900/50 to-red-900/50 border border-orange-500/50 rounded-lg p-3 sm:p-4 text-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                  <span className="text-sm sm:text-base font-mono text-orange-300">
+                    RARE Fee Status: {hasEnoughRare ? '✅ Ready (≥10 RARE)' : '❌ Insufficient (<10 RARE)'}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      if (address) {
+                        // Manually refreshing RARE balance
+                        const hasRare = await smartContractService.hasEnoughRareTokens(address);
+                        setHasEnoughRare(hasRare);
+                      }
+                    }}
+                    className="text-orange-400 hover:text-orange-300 underline text-xs sm:text-sm font-mono"
+                  >
+                    Refresh Balance
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           {/* Connection Status */}
           {!isLoggedIn && (
             <div className="mb-6 sm:mb-8">
@@ -332,19 +418,6 @@ const LpStakingPage = () => {
                     const farmColor = getFarmColor(farm.farm.id);
                     
                     // Detailed logging for farm 116
-                    console.log('🔍 LP STAKING PAGE - FARM 116 DETAILED INFO:', {
-                      farmId: farm.farm.id,
-                      stakingToken: farm.stakingToken,
-                      totalStaked: farm.totalStaked,
-                      totalRewards: farm.totalRewards,
-                      isActive: farm.isActive,
-                      isMultiReward: farm.isMultiReward,
-                      rewardTokens: farm.rewardTokens,
-                      totalStakedUSD: farm.totalStakedUSD,
-                      calculatedAPR: farm.calculatedAPR,
-                      farm: farm.farm,
-                      fullFarmObject: farm
-                    });
                     
                     return (
                       <motion.div
@@ -511,8 +584,14 @@ const LpStakingPage = () => {
                         <div className="space-y-2 sm:space-y-3">
                           <button
                             onClick={() => handleStakeClick(farm)}
-                            className="w-full py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors font-mono border-2 border-green-500 tracking-wide text-xs sm:text-sm"
+                            disabled={!hasEnoughRare}
+                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
+                              !hasEnoughRare
+                                ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700 text-white border-green-500'
+                            }`}
                             style={{ imageRendering: 'pixelated' }}
+                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to stake' : ''}
                           >
                             STAKE
                           </button>
@@ -520,13 +599,14 @@ const LpStakingPage = () => {
                           {/* Unstake Button - Disabled if no tokens staked */}
                           <button
                             onClick={() => handleUnstakeClick(farm)}
-                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0}
+                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 || !hasEnoughRare}
                             className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0
+                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 text-white border-red-500'
                             }`}
                             style={{ imageRendering: 'pixelated' }}
+                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 ? 'No tokens staked' : ''}
                           >
                             UNSTAKE
                           </button>
@@ -534,13 +614,14 @@ const LpStakingPage = () => {
                           {/* Harvest Button - Disabled if no rewards available */}
                           <button
                             onClick={() => handleHarvestClick(farm)}
-                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0}
+                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 || !hasEnoughRare}
                             className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0
+                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'
                             }`}
                             style={{ imageRendering: 'pixelated' }}
+                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 ? 'No rewards available' : ''}
                           >
                             HARVEST
                           </button>

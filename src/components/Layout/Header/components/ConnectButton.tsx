@@ -10,11 +10,11 @@ export const ConnectButton = () => {
     const unlockPanelManager = UnlockPanelManager.init({
       loginHandler: () => {
         // User successfully logged in
-        console.log('User logged in successfully');
+        // User logged in successfully
       },
       onClose: () => {
         // Modal closed
-        console.log('Unlock panel closed');
+        // Unlock panel closed
       }
     });
     
