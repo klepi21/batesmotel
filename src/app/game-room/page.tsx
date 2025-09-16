@@ -18,16 +18,21 @@ const GameRoomPage = () => {
     <AuthRedirectWrapper requireAuth={false}>
       <div className="relative w-full h-screen bg-black overflow-hidden">
         {/* Desktop Background Image */}
-        <div className="absolute inset-0 hidden md:block">
+        <div className="absolute inset-0 hidden md:block z-0">
           <img
             src="/assets/img/GameRoom.png"
             alt="Game Room"
             className="w-full h-full object-cover object-center"
+            onError={(e) => {
+              console.error('Failed to load GameRoom.png:', e);
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoad={() => console.log('GameRoom.png loaded successfully')}
           />
         </div>
         
         {/* Mobile Background Image - Full Layout */}
-        <div className="absolute inset-0 block md:hidden">
+        <div className="absolute inset-0 block md:hidden z-0">
           <Image
             src="/assets/img/mob/GameRoommob.png"
             alt="Game Room Mobile"
@@ -37,8 +42,8 @@ const GameRoomPage = () => {
           />
         </div>
         
-        {/* Overlay for better contrast */}
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+        {/* Overlay for better contrast - reduced opacity */}
+        <div className="absolute inset-0 bg-black bg-opacity-10 z-10"></div>
         
         {/* Return to Lobby Button */}
         <motion.div 
@@ -76,7 +81,7 @@ const GameRoomPage = () => {
         </motion.div>
 
         {/* Floating particles effect */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
           {Array.from({ length: 15 }).map((_, i) => (
             <motion.div
               key={i}
