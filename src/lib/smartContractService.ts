@@ -820,19 +820,16 @@ export class SmartContractService {
   // Check if user has enough RARE tokens (10 RARE required)
   async hasEnoughRareTokens(userAddress: string): Promise<boolean> {
     try {
-      // Get user's RARE token balance from the API
-      const response = await fetch(`https://api.multiversx.com/accounts/${userAddress}/tokens`);
+      // Get user's specific RARE token balance from the API
+      const response = await fetch(`https://api.multiversx.com/accounts/${userAddress}/tokens/RARE-99e8b0`);
       
       if (!response.ok) {
         return false;
       }
       
-      const tokens = await response.json();
+      const rareToken = await response.json();
       
-      // Find RARE token in the user's token list
-      const rareToken = tokens.find((token: any) => token.identifier === 'RARE-99e8b0');
-      
-      if (!rareToken) {
+      if (!rareToken || !rareToken.balance) {
         return false;
       }
       
