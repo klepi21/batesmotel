@@ -301,27 +301,28 @@ const BatesMotel3D = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-radial from-pink-500/20 via-pink-500/10 to-transparent opacity-30"></div>
                     
-                    {/* Clickable Left Area (30%) - Faucet */}
+                    {/* Clickable Areas - Desktop: Left/Right, Mobile: Upper/Lower */}
+                    {/* Desktop: Left Area (30%) - Faucet, Mobile: Lower Half - Faucet */}
                     <div 
-                      className="absolute left-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4 cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+                      className={`absolute ${isMobile ? 'bottom-0 left-0 w-full h-1/2' : 'left-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4'} cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50`}
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Left area clicked - navigating to faucet
+                        // Area clicked - navigating to faucet
                         router.push(RouteNamesEnum.faucet);
                       }}
                       title="Click to visit Faucet"
                     />
                     
-                    {/* Clickable Right Area (30%) - Game Room */}
+                    {/* Desktop: Right Area (30%) - Game Room, Mobile: Upper Half - Game Room */}
                     <div 
-                      className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4 cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+                      className={`absolute ${isMobile ? 'top-0 left-0 w-full h-1/2' : 'right-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4'} cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50`}
                       style={{ pointerEvents: 'auto' }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Right area clicked - navigating to game room
+                        // Area clicked - navigating to game room
                         router.push(RouteNamesEnum.gameroom);
                       }}
                       title="Click to enter Game Room"
@@ -542,7 +543,7 @@ const BatesMotel3D = () => {
               </div>
 
               {/* Floor Content */}
-              <div className="relative z-10 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto px-4 md:px-6">
+              <div className="relative z-[60] text-center max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto px-4 md:px-6">
                 {/* Floor Title - Only show for lobby */}
                 {floor.id === 0 && false && (
                   <motion.h2
