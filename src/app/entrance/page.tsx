@@ -147,7 +147,7 @@ const EntrancePage = () => {
             {!isLoggedIn ? (
               <button
                 onClick={handleConnect}
-                className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90 border-pink-400 relative overflow-hidden"
+                className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90 border-pink-400 relative overflow-hidden z-[60]"
                 style={{
                   clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
                 }}
@@ -157,7 +157,7 @@ const EntrancePage = () => {
             ) : (
               <button
                 onClick={handleDisconnect}
-                className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 border-yellow-400 relative overflow-hidden text-sm sm:text-base"
+                className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 border-yellow-400 relative overflow-hidden text-sm sm:text-base z-[60]"
                 style={{
                   clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
                 }}

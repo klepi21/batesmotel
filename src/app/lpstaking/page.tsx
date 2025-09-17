@@ -10,8 +10,11 @@ import { StakingModal } from '@/components/ui/staking-modal';
 import { signAndSendTransactions } from '@/helpers';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { RouteNamesEnum } from '@/localConstants';
 
 const LpStakingPage = () => {
+  const router = useRouter();
   const { address } = useGetAccountInfo();
   const isLoggedIn = useGetIsLoggedIn();
   const { network } = useGetNetworkConfig();
@@ -83,6 +86,30 @@ const LpStakingPage = () => {
   const getUserHarvestableRewards = (farmId: string) => {
     const userReward = userRewards.find(ur => ur.farmId === farmId);
     return userReward ? formatBalance(userReward.harvestableAmount) : '0';
+  };
+
+  // Helper functions for address actions
+  const copyAddressToClipboard = async () => {
+    if (address) {
+      try {
+        await navigator.clipboard.writeText(address);
+        toast.success('Address copied to clipboard!');
+      } catch (err) {
+        toast.error('Failed to copy address');
+      }
+    }
+  };
+
+  const openAddressInExplorer = () => {
+    if (address) {
+      const explorerUrl = `${network.explorerAddress}/accounts/${address}`;
+      window.open(explorerUrl, '_blank');
+    }
+  };
+
+  const handleDisconnect = () => {
+    // Redirect to logout page using router
+    router.push(RouteNamesEnum.logout);
   };
 
   // APR calculation - use calculated APR for multi-farms, simple calculation for others
@@ -279,12 +306,50 @@ const LpStakingPage = () => {
                 Stake your LP tokens and earn higher rewards
               </motion.p>
               <motion.div
-                className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2 font-mono tracking-wide"
+                className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2 font-mono tracking-wide flex items-center justify-center gap-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
               >
-                {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+                <span>
+                  {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+                </span>
+                {isLoggedIn && address && (
+                  <div className="flex items-center gap-1 ml-2">
+                    {/* Copy Address Button */}
+                    <button
+                      onClick={copyAddressToClipboard}
+                      className="p-1 hover:bg-gray-700 rounded transition-colors"
+                      title="Copy address to clipboard"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    
+                    {/* Open in Explorer Button */}
+                    <button
+                      onClick={openAddressInExplorer}
+                      className="p-1 hover:bg-gray-700 rounded transition-colors"
+                      title="Open address in explorer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                    
+                    {/* Disconnect Button */}
+                    <button
+                      onClick={handleDisconnect}
+                      className="p-1 hover:bg-red-700 rounded transition-colors"
+                      title="Disconnect wallet"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </motion.div>
             </div>
           </div>
