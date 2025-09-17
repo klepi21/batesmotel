@@ -66,7 +66,7 @@ const EntrancePage = () => {
       {/* Atmospheric glow effect */}
       <div className="absolute inset-0 bg-gradient-radial from-pink-500/20 via-pink-500/10 to-transparent opacity-30"></div>
       
-      {/* Clickable Areas - Desktop: Left/Right, Mobile: Upper/Down-Left/Down-Right */}
+      {/* Clickable Areas - Desktop: Left/Center/Right, Mobile: Upper/Down-Left/Down-Right */}
       {/* Desktop: Left Area (30%) - Faucet, Mobile: Down-Left Half - Faucet */}
       <div 
         className={`absolute ${isMobile ? 'bottom-0 left-0 w-1/2 h-1/2' : 'left-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4'} cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50`}
@@ -79,6 +79,21 @@ const EntrancePage = () => {
         }}
         title="Click to visit Faucet"
       />
+      
+      {/* Desktop: Center Area (40%) - Motel */}
+      {!isMobile && (
+        <div 
+          className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[40%] h-3/4 cursor-pointer hover:bg-green-500 hover:bg-opacity-30 transition-all duration-300 z-50"
+          style={{ pointerEvents: 'auto' }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Area clicked - navigating to motel
+            router.push('/motel');
+          }}
+          title="Click to enter Motel"
+        />
+      )}
       
       {/* Desktop: Right Area (30%) - Game Room, Mobile: Upper Half - Game Room */}
       <div 
