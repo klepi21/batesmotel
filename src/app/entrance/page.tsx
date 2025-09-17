@@ -133,7 +133,7 @@ const EntrancePage = () => {
             </h2>
             {isLoggedIn ? (
               <p className="text-lg md:text-xl text-white roboto-condensed-regular">
-                Mr/Mrs {getFormattedAddress()}
+                {getFormattedAddress()}
               </p>
             ) : (
               <p className="text-lg md:text-xl text-gray-300 roboto-condensed-regular">
