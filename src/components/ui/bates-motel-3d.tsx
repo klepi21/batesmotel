@@ -215,8 +215,9 @@ const BatesMotel3D = () => {
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
               onClick={() => {
-                // Don't handle clicks for lobby floor (floor 0) as it has custom clickable areas
+                // Handle lobby floor (floor 0) - navigate to motel (entrance)
                 if (floor.id === 0) {
+                  router.push('/motel');
                   return;
                 }
                 
@@ -279,7 +280,7 @@ const BatesMotel3D = () => {
                     {isMobile && (
                       <div className="absolute inset-0">
                         <Image
-                          src="/assets/img/mob/Entrancemob.png"
+                          src="/assets/img/mob/Lobby.png"
                           alt="Lobby Mobile"
                           fill
                           className="object-contain object-center"
@@ -291,42 +292,17 @@ const BatesMotel3D = () => {
                     {!isMobile && (
                       <div className="absolute inset-0">
                         <Image
-                          src="/assets/img/loby.jpg"
-                          alt="Lobby Desktop"
+                          src="/assets/img/1stLobby.png"
+                          alt="Entrance Desktop"
                           fill
                           className="object-contain object-center"
                           priority
                         />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-radial from-pink-500/20 via-pink-500/10 to-transparent opacity-30"></div>
                     
-                    {/* Clickable Areas - Desktop: Left/Right, Mobile: Upper/Lower */}
-                    {/* Desktop: Left Area (30%) - Faucet, Mobile: Lower Half - Faucet */}
-                    <div 
-                      className={`absolute ${isMobile ? 'bottom-0 left-0 w-full h-1/2' : 'left-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4'} cursor-pointer hover:bg-pink-500 hover:bg-opacity-30 transition-all duration-300 z-50`}
-                      style={{ pointerEvents: 'auto' }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Area clicked - navigating to faucet
-                        router.push(RouteNamesEnum.faucet);
-                      }}
-                      title="Click to visit Faucet"
-                    />
-                    
-                    {/* Desktop: Right Area (30%) - Game Room, Mobile: Upper Half - Game Room */}
-                    <div 
-                      className={`absolute ${isMobile ? 'top-0 left-0 w-full h-1/2' : 'right-0 top-1/2 transform -translate-y-1/2 w-[30%] h-3/4'} cursor-pointer hover:bg-blue-500 hover:bg-opacity-30 transition-all duration-300 z-50`}
-                      style={{ pointerEvents: 'auto' }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Area clicked - navigating to game room
-                        router.push(RouteNamesEnum.gameroom);
-                      }}
-                      title="Click to enter Game Room"
-                    />
+                    {/* Subtle hover effect */}
+                    <div className="absolute inset-0 bg-white bg-opacity-0 hover:bg-opacity-5 transition-all duration-300"></div>
                   </>
                 )}
 
@@ -584,61 +560,6 @@ const BatesMotel3D = () => {
                   </motion.p>
                 )}
 
-                {/* Welcome Component - Only show for lobby */}
-                {floor.id === 0 && (
-                  <motion.div
-                    className="flex flex-col items-center justify-center gap-4 mb-6 md:mb-8"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.8 }}
-                    viewport={{ once: true }}
-                  >
-                    {/* Welcome Message */}
-                    <div className="text-center mb-4 ml-0 sm:-ml-5">
-                      <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-pink-400 roboto-condensed-bold mb-2">
-                        Welcome
-                      </h2>
-                      {isLoggedIn ? (
-                        <p className="text-lg md:text-xl text-white roboto-condensed-regular">
-                          Mr/Mrs {getFormattedAddress()}
-                        </p>
-                      ) : (
-                        <p className="text-lg md:text-xl text-gray-300 roboto-condensed-regular">
-                          Please log in to continue
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 ml-0 sm:-ml-5">
-                      {!isLoggedIn ? (
-                        <motion.button
-                          onClick={handleConnect}
-                          className="px-8 py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:opacity-90 border-pink-400 relative overflow-hidden"
-                          style={{
-                            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
-                          }}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <span className="relative z-10">Connect Wallet</span>
-                        </motion.button>
-                      ) : (
-                        <motion.button
-                          onClick={handleDisconnect}
-                          className="px-6 sm:px-8 py-2 sm:py-3 rounded-xl font-medium transition-all roboto-condensed-bold border-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 border-yellow-400 relative overflow-hidden text-sm sm:text-base"
-                          style={{
-                            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
-                          }}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <span className="relative z-10">Leave Bates Motel</span>
-                        </motion.button>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
               </div>
 
               {/* Floor Number Indicator */}
