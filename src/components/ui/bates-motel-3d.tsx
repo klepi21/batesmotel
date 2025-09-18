@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useGetLoginInfo, useGetAccount } from '@/lib';
 import { useRouter } from 'next/navigation';
 import { RouteNamesEnum } from '@/localConstants';
+import { smartContractService } from '@/lib/smartContractService';
 
 interface FloorData {
   id: number;
@@ -25,6 +26,8 @@ const BatesMotel3D = () => {
     }
     return false;
   });
+  const [currentFloor, setCurrentFloor] = useState<number>(0); // Track current floor for gauge
+  const [totalTVL, setTotalTVL] = useState<number>(0); // Total Value Locked across all farms
   const { isLoggedIn } = useGetLoginInfo();
   const { address } = useGetAccount();
   const router = useRouter();
@@ -49,6 +52,65 @@ const BatesMotel3D = () => {
       window.removeEventListener('resize', checkScreenSize);
       clearTimeout(timeoutId);
     };
+  }, []);
+
+  // Track current floor for gauge
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '-20% 0px -20% 0px',
+      threshold: 0.5
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const floorId = entry.target.getAttribute('data-floor');
+          if (floorId) {
+            setCurrentFloor(parseInt(floorId));
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    
+    // Observe all floor sections
+    const floorElements = document.querySelectorAll('[data-floor]');
+    floorElements.forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Fetch and calculate total TVL from displayed farms only
+  useEffect(() => {
+    const fetchTVL = async () => {
+      try {
+        const farms = await smartContractService.getAllFarms();
+        let totalValue = 0;
+        
+        // Only calculate TVL from farms we actually display:
+        // Farm 115 (Staking page) and Farm 116 (LP staking page)
+        const displayedFarmIds = ['115', '116'];
+        
+        farms.forEach((farm) => {
+          if (displayedFarmIds.includes(farm.farm.id) && farm.totalStakedUSD && farm.totalStakedUSD > 0) {
+            totalValue += farm.totalStakedUSD;
+          }
+        });
+        
+        setTotalTVL(totalValue);
+      } catch (error) {
+        console.error('Error fetching TVL:', error);
+        setTotalTVL(0);
+      }
+    };
+
+    fetchTVL();
   }, []);
   
   // Debug login state - removed to prevent rate limiting
@@ -102,20 +164,20 @@ const BatesMotel3D = () => {
       icon: ""
     },
     {
-      id: 1,
-      name: "LP ROOMS",
-      subtitle: "",
-      description: "",
-      features: ["HYPE/USDC", "RARE/Room", "FEDUP/HYPE"],
-      color: "#8A2BE2",
-      icon: ""
-    },
-    {
       id: 2,
       name: "STAKING ROOMS",
       subtitle: "",
       description: "",
       features: ["Staking Pools", "Yield Farming", "Rewards System"],
+      color: "#8A2BE2",
+      icon: ""
+    },
+    {
+      id: 1,
+      name: "LP ROOMS",
+      subtitle: "",
+      description: "",
+      features: ["HYPE/USDC", "RARE/Room", "FEDUP/HYPE"],
       color: "#8A2BE2",
       icon: ""
     },
@@ -489,6 +551,31 @@ const BatesMotel3D = () => {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-radial from-yellow-500/20 via-yellow-500/10 to-transparent opacity-60"></div>
+                    
+                    {/* TVL Display */}
+                    <div className="absolute top-4 left-4 md:top-8 md:left-8 z-20">
+                      <motion.div
+                        className="bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded-lg p-3 md:p-4 shadow-2xl"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                      >
+                        <div className="text-center">
+                          <div className="text-xs md:text-sm text-yellow-400 font-mono tracking-widest font-medium mb-1">
+                            TOTAL VALUE LOCKED
+                          </div>
+                          <div className="text-lg md:text-2xl text-yellow-300 font-mono font-bold"
+                               style={{ 
+                                 textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(251, 191, 36, 0.6)' 
+                               }}>
+                            ${totalTVL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-xs md:text-sm text-gray-400 font-mono mt-1">
+                            Across All Farms
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
                   </>
                 )}
                 
@@ -579,35 +666,156 @@ const BatesMotel3D = () => {
 
 
 
-        {/* Clickable Elevator Number Pad */}
+        {/* Vintage Elevator Control Panel */}
         <motion.div
-          className="fixed top-16 md:top-18 lg:top-20 right-2 md:right-2 lg:right-4 z-50 bg-black/80 backdrop-blur-md border border-pink-500/30 rounded-lg p-2 md:p-3 lg:p-4"
+          className="fixed top-16 md:top-18 lg:top-20 right-2 md:right-2 lg:right-4 z-50 scale-25 md:scale-100 origin-top-right"
           data-floor-select
           initial={{ opacity: 0, x: 100 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <div className="text-center">
-            <div className="text-xs md:text-sm text-gray-400 roboto-condensed-regular mb-2">FLOOR SELECT</div>
-            <div className="grid grid-cols-2 gap-1 md:gap-2">
-              {floors.map((floor) => (
-                <motion.button
-                  key={floor.id}
-                  className="w-8 h-8 md:w-10 md:h-10 bg-black/50 border border-pink-500/30 rounded text-xs md:text-sm font-bold text-pink-500 hover:bg-pink-500/20 transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    // const targetFloor = floors.length - 1 - floor.id; // Removed unused variable
-                    const targetSection = document.querySelector(`[data-floor="${floor.id}"]`);
+          <div className="relative bg-gradient-to-br from-amber-800 via-amber-900 to-yellow-900 border-2 border-amber-700 rounded-xl p-2 md:p-5 shadow-2xl"
+               style={{
+                 background: 'linear-gradient(145deg, #92400e 0%, #78350f 30%, #451a03 70%, #1c1917 100%)',
+                 boxShadow: '0 12px 40px rgba(0,0,0,0.8), inset 0 2px 4px rgba(251, 191, 36, 0.2), inset 0 -2px 4px rgba(0,0,0,0.3)'
+               }}>
+            
+            {/* Floor Indicator Gauge */}
+            <div className="relative mb-2 md:mb-5">
+              <div className="text-center mb-1 md:mb-3">
+                <div className="text-xs md:text-sm text-amber-100 font-mono tracking-widest font-medium">FLOOR</div>
+                <div className="text-amber-100 font-mono text-lg md:text-2xl font-bold mt-0 md:mt-1"
+                     style={{ 
+                       textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(251, 191, 36, 0.6)' 
+                     }}>
+                  {currentFloor === -1 ? "V" : currentFloor === 0 ? "L" : currentFloor}
+                </div>
+              </div>
+              
+              {/* Semi-circular gauge */}
+              <div className="relative w-16 h-8 md:w-24 md:h-14 mx-auto">
+                <svg className="w-full h-full" viewBox="0 0 100 60" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
+                  {/* Semi-circle background with gradient */}
+                  <defs>
+                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#451a03" />
+                      <stop offset="50%" stopColor="#292524" />
+                      <stop offset="100%" stopColor="#1c1917" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <path
+                    d="M 10 45 A 40 40 0 0 1 90 45"
+                    fill="none"
+                    stroke="url(#gaugeGradient)"
+                    strokeWidth="8"
+                  />
+                  
+                  
+                  {/* Needle pointing to current floor */}
+                  <g stroke="#fbbf24" strokeWidth="4" fill="#fbbf24" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}>
+                    {(() => {
+                      // Calculate needle position based on current floor - proper arc movement
+                      const centerX = 50;
+                      const centerY = 45;
+                      const radius = 25;
+                      
+                      // Floor positions in degrees (starting from left, going right in arc)
+                      const floorAngles = {
+                        '-1': 140, // Vault (M) - far left
+                        '0': 120,  // Lobby (L) - left
+                        '1': 100,  // Floor 1 - center-left
+                        '2': 80,   // Floor 2 - center
+                        '3': 60,   // Floor 3 - center-right
+                        '4': 40    // Floor 4 - right
+                      };
+                      
+                      const angle = floorAngles[currentFloor.toString()] || floorAngles['0'];
+                      const radians = (angle * Math.PI) / 180;
+                      
+                      const needleX = centerX + radius * Math.cos(radians);
+                      const needleY = centerY - radius * Math.sin(radians);
+                      
+                      return (
+                        <>
+                          <path 
+                            d={`M ${centerX} ${centerY} L ${needleX} ${needleY}`} 
+                            strokeLinecap="round" 
+                          />
+                          <circle cx={centerX} cy={centerY} r="3" />
+                        </>
+                      );
+                    })()}
+                  </g>
+                </svg>
+                
+              </div>
+            </div>
+            
+            {/* Call Buttons */}
+            <div className="flex justify-center space-x-2 md:space-x-4">
+              {/* Down Button */}
+              <motion.button
+                className="w-6 h-6 md:w-10 md:h-10 bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-full flex items-center justify-center shadow-lg"
+                style={{
+                  boxShadow: '0 6px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(251, 191, 36, 0.3), inset 0 -2px 4px rgba(0,0,0,0.3)'
+                }}
+                whileHover={{ 
+                  scale: 1.1,
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.6), inset 0 2px 4px rgba(251, 191, 36, 0.4)'
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  // Navigate to lower floor (higher floor number in array)
+                  const currentIndex = floors.findIndex(f => f.id === currentFloor);
+                  if (currentIndex < floors.length - 1) {
+                    const targetFloor = floors[currentIndex + 1];
+                    const targetSection = document.querySelector(`[data-floor="${targetFloor.id}"]`);
                     if (targetSection) {
                       targetSection.scrollIntoView({ behavior: 'smooth' });
                     }
-                  }}
-                >
-                  {floor.id === -1 ? "V" : floor.id === 0 ? "L" : floor.id}
-                </motion.button>
-              ))}
+                  }
+                }}
+              >
+                <svg className="w-3 h-3 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                </svg>
+              </motion.button>
+              
+              {/* Up Button */}
+              <motion.button
+                className="w-6 h-6 md:w-10 md:h-10 bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-500 rounded-full flex items-center justify-center shadow-lg"
+                style={{
+                  boxShadow: '0 6px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(251, 191, 36, 0.3), inset 0 -2px 4px rgba(0,0,0,0.3)'
+                }}
+                whileHover={{ 
+                  scale: 1.1,
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.6), inset 0 2px 4px rgba(251, 191, 36, 0.4)'
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  // Navigate to upper floor (lower floor number in array)
+                  const currentIndex = floors.findIndex(f => f.id === currentFloor);
+                  if (currentIndex > 0) {
+                    const targetFloor = floors[currentIndex - 1];
+                    const targetSection = document.querySelector(`[data-floor="${targetFloor.id}"]`);
+                    if (targetSection) {
+                      targetSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }
+                }}
+              >
+                <svg className="w-3 h-3 md:w-5 md:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" />
+                </svg>
+              </motion.button>
             </div>
+            
+            {/* Vintage screws for decoration */}
+            <div className="absolute top-1 left-1 md:top-3 md:left-3 w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-300 rounded-full shadow-sm"></div>
+            <div className="absolute top-1 right-1 md:top-3 md:right-3 w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-300 rounded-full shadow-sm"></div>
+            <div className="absolute bottom-1 left-1 md:bottom-3 md:left-3 w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-300 rounded-full shadow-sm"></div>
+            <div className="absolute bottom-1 right-1 md:bottom-3 md:right-3 w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-300 rounded-full shadow-sm"></div>
           </div>
         </motion.div>
 
