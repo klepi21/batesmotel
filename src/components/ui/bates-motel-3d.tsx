@@ -721,7 +721,7 @@ const BatesMotel3D = () => {
                       const radius = 25;
                       
                       // Floor positions in degrees (starting from left, going right in arc)
-                      const floorAngles = {
+                      const floorAngles: Record<string, number> = {
                         '-1': 140, // Vault (M) - far left
                         '0': 120,  // Lobby (L) - left
                         '1': 100,  // Floor 1 - center-left
