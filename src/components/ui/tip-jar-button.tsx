@@ -18,17 +18,17 @@ export const TipJarButton = () => {
     <>
       {/* Floating Tip Jar Button Container */}
       <div 
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50"
         style={{
           position: 'fixed',
-          right: '24px',
-          bottom: '24px',
+          right: '16px',
+          bottom: '16px',
           left: 'auto',
           top: 'auto'
         }}
       >
         <motion.button
-          className="w-16 h-20 bg-gradient-to-b from-amber-600 via-amber-700 to-amber-800 rounded-t-2xl rounded-b-lg shadow-2xl border-2 border-amber-500 flex flex-col items-center justify-end group relative overflow-hidden"
+          className="w-12 h-16 md:w-16 md:h-20 bg-gradient-to-b from-amber-600 via-amber-700 to-amber-800 rounded-t-xl md:rounded-t-2xl rounded-b-md md:rounded-b-lg shadow-2xl border-2 border-amber-500 flex flex-col items-center justify-end group relative overflow-hidden"
           style={{
             boxShadow: '0 8px 32px rgba(245, 158, 11, 0.4), 0 0 0 1px rgba(245, 158, 11, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
           }}
@@ -50,10 +50,10 @@ export const TipJarButton = () => {
         {/* Jar Body */}
         <div className="w-full h-full relative">
           {/* Jar Opening */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-12 h-3 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-xl border-2 border-amber-300 border-b-0" />
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 md:w-12 h-2 md:h-3 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-lg md:rounded-t-xl border-2 border-amber-300 border-b-0" />
           
           {/* Jar Content - Coins */}
-          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-0.5">
+          <div className="absolute bottom-0.5 md:bottom-1 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-0.5">
             {/* Coin Stack */}
             <motion.div
               className="flex flex-col items-center space-y-0.5"
@@ -68,25 +68,25 @@ export const TipJarButton = () => {
               }}
             >
               {/* Top Coin */}
-              <div className="w-4 h-4 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full border border-yellow-200 shadow-sm" />
+              <div className="w-3 h-3 md:w-4 md:h-4 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full border border-yellow-200 shadow-sm" />
               {/* Middle Coin */}
-              <div className="w-3.5 h-3.5 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full border border-yellow-300 shadow-sm" />
+              <div className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full border border-yellow-300 shadow-sm" />
               {/* Bottom Coin */}
-              <div className="w-3 h-3 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full border border-yellow-400 shadow-sm" />
+              <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full border border-yellow-400 shadow-sm" />
             </motion.div>
           </div>
           
           {/* Jar Label */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-10 h-6 bg-gradient-to-b from-amber-200 to-amber-300 rounded border border-amber-400 flex items-center justify-center">
+          <div className="absolute top-3 md:top-4 left-1/2 transform -translate-x-1/2 w-8 md:w-10 h-4 md:h-6 bg-gradient-to-b from-amber-200 to-amber-300 rounded border border-amber-400 flex items-center justify-center">
             <span className="text-amber-800 text-xs font-bold roboto-condensed-bold">TIPS</span>
           </div>
           
           {/* Shine Effect */}
-          <div className="absolute top-1 left-1 w-6 h-8 bg-gradient-to-br from-white/30 to-transparent rounded-full opacity-60" />
+          <div className="absolute top-0.5 md:top-1 left-0.5 md:left-1 w-4 md:w-6 h-6 md:h-8 bg-gradient-to-br from-white/30 to-transparent rounded-full opacity-60" />
         </div>
         
         {/* Glow effect */}
-        <div className="absolute inset-0 bg-amber-400 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 rounded-t-2xl rounded-b-lg" />
+        <div className="absolute inset-0 bg-amber-400 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 rounded-t-xl md:rounded-t-2xl rounded-b-md md:rounded-b-lg" />
         
         {/* Tooltip */}
         <motion.div

@@ -11,6 +11,7 @@ export default function Unlock() {
   // Check if user came from specific pages
   const isFromFaucet = typeof window !== 'undefined' && window.location.search.includes('from=faucet');
   const isFromLobby = typeof window !== 'undefined' && window.location.search.includes('from=lobby');
+  const isFromMotel = typeof window !== 'undefined' && window.location.search.includes('from=motel');
 
   const unlockPanelManager = UnlockPanelManager.init({
     loginHandler: () => {
@@ -19,6 +20,8 @@ export default function Unlock() {
         router.push(RouteNamesEnum.faucet);
       } else if (isFromLobby) {
         router.push(RouteNamesEnum.home);
+      } else if (isFromMotel) {
+        router.push('/motel');
       } else {
         router.push(RouteNamesEnum.home);
       }
@@ -29,6 +32,8 @@ export default function Unlock() {
         router.replace(RouteNamesEnum.faucet);
       } else if (isFromLobby) {
         router.replace(RouteNamesEnum.home);
+      } else if (isFromMotel) {
+        router.replace('/motel');
       } else {
         router.replace(RouteNamesEnum.home);
       }
@@ -41,7 +46,11 @@ export default function Unlock() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      router.replace(RouteNamesEnum.home);
+      if (isFromMotel) {
+        router.replace('/motel');
+      } else {
+        router.replace(RouteNamesEnum.home);
+      }
       return;
     }
 

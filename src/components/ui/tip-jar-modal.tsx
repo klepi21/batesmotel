@@ -62,6 +62,12 @@ const AVAILABLE_TOKENS = [
     name: 'EGLD',
     decimals: 18,
     image: 'https://tools.multiversx.com/assets-cdn/tokens/EGLD/icon.png'
+  },
+  {
+    identifier: 'RONE-bb2e69',
+    name: 'RONE',
+    decimals: 18,
+    image: 'https://tools.multiversx.com/assets-cdn/tokens/RONE-bb2e69/icon.png'
   }
 ];
 

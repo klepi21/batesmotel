@@ -250,8 +250,8 @@ const BatesMotel3D = () => {
   const handleConnect = () => {
     // handleConnect called
     
-    // Navigate to the dedicated unlock page instead
-    router.push(`${RouteNamesEnum.unlock}?from=lobby`);
+    // Navigate to the dedicated unlock page but stay on motel
+    router.push(`${RouteNamesEnum.unlock}?from=motel`);
   };
 
   // Disconnect functionality
@@ -553,25 +553,25 @@ const BatesMotel3D = () => {
                     <div className="absolute inset-0 bg-gradient-radial from-yellow-500/20 via-yellow-500/10 to-transparent opacity-60"></div>
                     
                     {/* TVL Display */}
-                    <div className="absolute top-4 left-4 md:top-8 md:left-8 z-20">
+                    <div className="absolute top-2 left-2 md:top-8 md:left-8 z-20">
                       <motion.div
-                        className="bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded-lg p-3 md:p-4 shadow-2xl"
+                        className="bg-black/80 backdrop-blur-md border border-yellow-500/30 rounded p-2 md:p-4 shadow-2xl"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.3 }}
                       >
                         <div className="text-center">
-                          <div className="text-xs md:text-sm text-yellow-400 font-mono tracking-widest font-medium mb-1">
-                            TOTAL VALUE LOCKED
+                          <div className="text-xs text-yellow-400 font-mono tracking-wider md:tracking-widest font-medium mb-0.5 md:mb-1">
+                            TVL
                           </div>
-                          <div className="text-lg md:text-2xl text-yellow-300 font-mono font-bold"
+                          <div className="text-sm md:text-2xl text-yellow-300 font-mono font-bold"
                                style={{ 
                                  textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(251, 191, 36, 0.6)' 
                                }}>
                             ${totalTVL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
-                          <div className="text-xs md:text-sm text-gray-400 font-mono mt-1">
-                            Across All Farms
+                          <div className="text-xs text-gray-400 font-mono mt-0.5 md:mt-1">
+                            Farms
                           </div>
                         </div>
                       </motion.div>
@@ -817,6 +817,94 @@ const BatesMotel3D = () => {
             <div className="absolute bottom-1 left-1 md:bottom-3 md:left-3 w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-300 rounded-full shadow-sm"></div>
             <div className="absolute bottom-1 right-1 md:bottom-3 md:right-3 w-1 h-1 md:w-1.5 md:h-1.5 bg-amber-300 rounded-full shadow-sm"></div>
           </div>
+        </motion.div>
+
+        {/* Hotel Check-In Button */}
+        <motion.div
+          className="fixed top-4 md:top-6 lg:top-8 left-0 right-0 z-50 flex justify-center"
+          style={{
+            paddingLeft: '120px',
+            paddingRight: '120px'
+          }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+            <motion.button
+              className={`relative border-2 rounded-lg p-2 md:p-4 shadow-2xl group ${
+                isLoggedIn 
+                  ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800 border-red-500' 
+                  : 'bg-gradient-to-br from-green-600 via-green-700 to-green-800 border-green-500'
+              }`}
+              style={{
+                background: isLoggedIn 
+                  ? 'linear-gradient(145deg, #dc2626 0%, #b91c1c 30%, #991b1b 70%, #7f1d1d 100%)'
+                  : 'linear-gradient(145deg, #059669 0%, #047857 30%, #065f46 70%, #064e3b 100%)',
+                boxShadow: isLoggedIn
+                  ? '0 8px 32px rgba(239, 68, 68, 0.4), 0 0 0 1px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                  : '0 8px 32px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: isLoggedIn
+                  ? '0 12px 40px rgba(239, 68, 68, 0.6), 0 0 0 1px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+                  : '0 12px 40px rgba(16, 185, 129, 0.6), 0 0 0 1px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+              }}
+              whileTap={{ scale: 0.95 }}
+              onClick={isLoggedIn ? handleDisconnect : handleConnect}
+            >
+              {/* Icon */}
+              <div className="flex items-center space-x-1 md:space-x-3">
+                <motion.div
+                  className={`text-sm md:text-xl ${
+                    isLoggedIn ? 'text-red-200' : 'text-green-200'
+                  }`}
+                  animate={{ 
+                    rotate: [0, -5, 5, 0],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 4
+                  }}
+                >
+                  {isLoggedIn ? '🚪' : '🗝️'}
+                </motion.div>
+                
+                <div className="text-center">
+                  <div className={`text-xs md:text-sm font-mono tracking-wider md:tracking-widest font-medium roboto-condensed-bold ${
+                    isLoggedIn ? 'text-red-100' : 'text-green-100'
+                  }`}>
+                    {isLoggedIn ? 'CHECK-OUT' : 'CHECK-IN'}
+                  </div>
+                  <div className={`text-xs roboto-condensed-regular ${
+                    isLoggedIn ? 'text-red-200' : 'text-green-200'
+                  }`}>
+                    {isLoggedIn ? getFormattedAddress() : 'Connect'}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Glow effect */}
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300 rounded-lg ${
+                isLoggedIn ? 'bg-red-400' : 'bg-green-400'
+              }`} />
+              
+              {/* Vintage screws for decoration */}
+              <div className={`absolute top-0.5 left-0.5 md:top-2 md:left-2 w-0.5 h-0.5 md:w-1.5 md:h-1.5 rounded-full shadow-sm ${
+                isLoggedIn ? 'bg-red-300' : 'bg-green-300'
+              }`}></div>
+              <div className={`absolute top-0.5 right-0.5 md:top-2 md:right-2 w-0.5 h-0.5 md:w-1.5 md:h-1.5 rounded-full shadow-sm ${
+                isLoggedIn ? 'bg-red-300' : 'bg-green-300'
+              }`}></div>
+              <div className={`absolute bottom-0.5 left-0.5 md:bottom-2 md:left-2 w-0.5 h-0.5 md:w-1.5 md:h-1.5 rounded-full shadow-sm ${
+                isLoggedIn ? 'bg-red-300' : 'bg-green-300'
+              }`}></div>
+              <div className={`absolute bottom-0.5 right-0.5 md:bottom-2 md:right-2 w-0.5 h-0.5 md:w-1.5 md:h-1.5 rounded-full shadow-sm ${
+                isLoggedIn ? 'bg-red-300' : 'bg-green-300'
+              }`}></div>
+            </motion.button>
         </motion.div>
 
         {/* Welcome Message at Bottom */}
