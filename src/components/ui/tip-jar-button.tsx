@@ -9,8 +9,12 @@ export const TipJarButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isLoggedIn } = useGetLoginInfo();
 
+  // Debug logging
+  console.log('TipJarButton - isLoggedIn:', isLoggedIn);
+
   // Don't show the button if user is not logged in
   if (!isLoggedIn) {
+    console.log('TipJarButton - User not logged in, hiding button');
     return null;
   }
 
@@ -24,7 +28,8 @@ export const TipJarButton = () => {
           right: '16px',
           bottom: '16px',
           left: 'auto',
-          top: 'auto'
+          top: 'auto',
+          backgroundColor: 'rgba(255, 0, 0, 0.3)' // Temporary debug background
         }}
       >
         <motion.button
