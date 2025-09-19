@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { Footer } from './Footer';
+import { TipJarButton } from '@/components';
 
 interface LayoutType {
   children: ReactNode;
@@ -14,6 +15,7 @@ export const Layout = ({ children }: LayoutType) => {
         {children}
       </main>
       <Footer />
+      <TipJarButton />
     </div>
   );
 };

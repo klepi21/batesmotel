@@ -11,3 +11,5 @@ export * from './ui/demo';
 export * from './ui/gradient-button';
 export * from './ui/status-dot';
 export * from './ui/staking-modal';
+export * from './ui/tip-jar-button';
+export * from './ui/tip-jar-modal';
