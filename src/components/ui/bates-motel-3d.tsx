@@ -192,6 +192,15 @@ const BatesMotel3D = () => {
     },
     {
       id: -1,
+      name: "BASEMENT -1",
+      subtitle: "",
+      description: "",
+      features: ["Coming Soon", "Exclusive Area", "Special Access"],
+      color: "#00B3A4",
+      icon: ""
+    },
+    {
+      id: -2,
       name: "THE VAULT",
       subtitle: "",
       description: "",
@@ -304,7 +313,7 @@ const BatesMotel3D = () => {
                 ) : null}
                 
                 {/* Atmospheric glow effects for each floor */}
-                {floor.id === -1 && (
+                {floor.id === -2 && (
                   <>
                     <div className="absolute inset-0 bg-black" />
                     {/* Mobile Background */}
@@ -332,6 +341,37 @@ const BatesMotel3D = () => {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-radial from-cyan-500/20 via-cyan-500/10 to-transparent opacity-30"></div>
+                  </>
+                )}
+
+                {floor.id === -1 && (
+                  <>
+                    <div className="absolute inset-0 bg-black" />
+                    {/* Mobile Background */}
+                    {isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/mob/jorkinAssetmob.png"
+                          alt="Basement -1 Mobile"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    {/* Desktop Background */}
+                    {!isMobile && (
+                      <div className="absolute inset-0">
+                        <Image
+                          src="/assets/img/jorkinAsset.png"
+                          alt="Basement -1 Desktop"
+                          fill
+                          className="object-contain object-center"
+                          priority
+                        />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-radial from-teal-500/20 via-teal-500/10 to-transparent opacity-30"></div>
                   </>
                 )}
 
@@ -684,11 +724,11 @@ const BatesMotel3D = () => {
             <div className="relative mb-2 md:mb-5">
               <div className="text-center mb-1 md:mb-3">
                 <div className="text-xs md:text-sm text-amber-100 font-mono tracking-widest font-medium">FLOOR</div>
-                <div className="text-amber-100 font-mono text-lg md:text-2xl font-bold mt-0 md:mt-1"
+              <div className="text-amber-100 font-mono text-lg md:text-2xl font-bold mt-0 md:mt-1"
                      style={{ 
                        textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(251, 191, 36, 0.6)' 
                      }}>
-                  {currentFloor === -1 ? "V" : currentFloor === 0 ? "L" : currentFloor}
+                  {currentFloor === -2 ? "V" : currentFloor === 0 ? "L" : currentFloor}
                 </div>
               </div>
               
@@ -722,12 +762,13 @@ const BatesMotel3D = () => {
                       
                       // Floor positions in degrees (starting from left, going right in arc)
                       const floorAngles: Record<string, number> = {
-                        '-1': 140, // Vault (M) - far left
-                        '0': 120,  // Lobby (L) - left
-                        '1': 100,  // Floor 1 - center-left
-                        '2': 80,   // Floor 2 - center
-                        '3': 60,   // Floor 3 - center-right
-                        '4': 40    // Floor 4 - right
+                        '-2': 150, // Vault - far left
+                        '-1': 130, // Basement -1
+                        '0': 115,  // Lobby (L) - left
+                        '1': 95,   // Floor 1 - center-left
+                        '2': 75,   // Floor 2 - center
+                        '3': 55,   // Floor 3 - center-right
+                        '4': 35    // Floor 4 - right
                       };
                       
                       const angle = floorAngles[currentFloor.toString()] || floorAngles['0'];
