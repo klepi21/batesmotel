@@ -1,0 +1,593 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from "motion/react";
+import Image from 'next/image';
+import { useGetAccountInfo, useGetIsLoggedIn, useGetNetworkConfig, UnlockPanelManager } from '@/lib';
+import { AuthRedirectWrapper } from '@/wrappers';
+import { smartContractService, FarmInfo, UserFarmInfo, UserRewardsInfo } from '@/lib/smartContractService';
+import { StakingModal } from '@/components/ui/staking-modal';
+import { signAndSendTransactions } from '@/helpers';
+import { toast, Toaster } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { RouteNamesEnum } from '@/localConstants';
+
+const JorkinRoomPage = () => {
+  const router = useRouter();
+  const { address } = useGetAccountInfo();
+  const isLoggedIn = useGetIsLoggedIn();
+  const { network } = useGetNetworkConfig();
+
+  const [farm116, setFarm116] = useState<FarmInfo | null>(null);
+  const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
+  const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasEnoughRare, setHasEnoughRare] = useState<boolean>(false);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'stake' | 'unstake'>('stake');
+  const [selectedFarm, setSelectedFarm] = useState<FarmInfo | null>(null);
+
+  // Click game state
+  const [clickCount, setClickCount] = useState<number>(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const farmsData = await smartContractService.getAllFarms();
+      const only116 = farmsData.find(f => f.farm.id === '116') || null;
+      setFarm116(only116);
+
+      if (isLoggedIn && address) {
+        try {
+          const userFarmsData = await smartContractService.getUserFarmInfo(address);
+          setUserFarms(userFarmsData);
+
+          const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+          setUserRewards(userRewardsData);
+
+          const hasRare = await smartContractService.hasEnoughRareTokens(address);
+          setHasEnoughRare(hasRare);
+        } catch (userError) {
+          // ignore user-specific errors here
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch farms data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [isLoggedIn, address]);
+
+  function formatBalance(balance: string, decimals: number = 18) {
+    const num = parseFloat(balance) / Math.pow(10, decimals);
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+  }
+
+  function getUserStakedBalance(farmId: string) {
+    const userFarm = userFarms.find(uf => uf.farmId === farmId);
+    return userFarm ? formatBalance(userFarm.stakedBalance) : '0';
+  }
+
+  function getUserHarvestableRewards(farmId: string) {
+    const userReward = userRewards.find(ur => ur.farmId === farmId);
+    return userReward ? formatBalance(userReward.harvestableAmount) : '0';
+  }
+
+  function calculateAPR(farm: FarmInfo): number {
+    try {
+      if (farm.isMultiReward && farm.calculatedAPR !== undefined) return farm.calculatedAPR;
+      const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
+      const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
+      if (totalStakedNum === 0) return 0;
+      const apr = (totalRewardsNum / totalStakedNum) * 100 * 365;
+      return Math.round(apr);
+    } catch {
+      return 0;
+    }
+  }
+
+  function getFarmColor(farmId: string) {
+    const colors = ['#8A2BE2', '#FF6B35', '#FF69B4', '#00CED1', '#32CD32', '#FFD700'];
+    const index = parseInt(farmId) % colors.length;
+    return colors[index];
+  }
+
+  // Helper functions for address actions
+  const copyAddressToClipboard = async () => {
+    if (address) {
+      try {
+        await navigator.clipboard.writeText(address);
+        toast.success('Address copied to clipboard!');
+      } catch (err) {
+        toast.error('Failed to copy address');
+      }
+    }
+  };
+
+  const openAddressInExplorer = () => {
+    if (address) {
+      const explorerUrl = `${network.explorerAddress}/accounts/${address}`;
+      window.open(explorerUrl, '_blank');
+    }
+  };
+
+  const handleDisconnect = () => {
+    router.push(RouteNamesEnum.logout);
+  };
+
+  function handleStakeClick(farm: FarmInfo) {
+    if (!isLoggedIn) { toast.error('Please connect your wallet first'); return; }
+    if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
+    setSelectedFarm(farm); setModalType('stake'); setModalOpen(true);
+  }
+
+  function handleUnstakeClick(farm: FarmInfo) {
+    if (!isLoggedIn) { toast.error('Please connect your wallet first'); return; }
+    if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
+    const stakedBalance = getUserStakedBalance(farm.farm.id);
+    if (parseFloat(stakedBalance) <= 0) { toast.error('No tokens staked in this farm'); return; }
+    setSelectedFarm(farm); setModalType('unstake'); setModalOpen(true);
+  }
+
+  async function handleHarvestClick(farm: FarmInfo) {
+    if (!isLoggedIn || !address) { toast.error('Please connect your wallet first'); return; }
+    if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
+    try {
+      const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
+      const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
+      if (harvestableNum <= 0) { toast.error('No rewards available to harvest'); return; }
+      const rareFeeTransaction = smartContractService.createRareFeeTransaction(address, network.chainId);
+      const harvestTransaction = smartContractService.createHarvestTransaction(farm.farm.id, address, network.chainId);
+      const { sessionId } = await signAndSendTransactions({
+        transactions: [rareFeeTransaction, harvestTransaction],
+        transactionsDisplayInfo: {
+          processingMessage: 'Processing harvest transaction (including 10 RARE fee)',
+          errorMessage: 'Error during harvest',
+          successMessage: 'Successfully harvested rewards! (10 RARE fee paid)'
+        }
+      });
+      if (sessionId) { toast.success('Harvest transaction submitted successfully!'); await fetchData(); }
+    } catch {
+      toast.error('Failed to harvest rewards');
+    }
+  }
+
+  async function handleModalSuccess() { await fetchData(); }
+
+  function handleConnectWallet() {
+    const unlockPanelManager = UnlockPanelManager.init({
+      loginHandler: () => {},
+      onClose: () => {}
+    });
+    unlockPanelManager.openUnlockPanel();
+  }
+
+  // Click game handler
+  function handleClickGame() {
+    setClickCount(prev => prev + 1);
+    const video = videoRef.current;
+    if (video) {
+      try {
+        video.currentTime = 0;
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise.catch(() => {});
+        }
+      } catch {}
+    }
+  }
+
+  const farmColor = useMemo(() => (farm116 ? getFarmColor(farm116.farm.id) : '#8A2BE2'), [farm116]);
+
+  return (
+    <AuthRedirectWrapper requireAuth={false}>
+      <div className="min-h-screen bg-black relative">
+        <Toaster 
+          theme="dark" 
+          position="bottom-right"
+          toastOptions={{
+            style: { background: '#1A1A1A', border: '1px solid rgba(147, 51, 234, 0.3)', color: 'white' }
+          }}
+        />
+
+        {/* Header */}
+        <div className="bg-black/90 backdrop-blur-md border-b-2 border-purple-500/50 shadow-2xl">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+            <div className="text-center">
+              <motion.h1
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-purple-500 font-mono mb-1 sm:mb-2 tracking-wider"
+                style={{ textShadow: '0 0 10px #8A2BE2, 0 0 20px #8A2BE2', letterSpacing: '0.2em' }}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                JORKIN ROOM
+              </motion.h1>
+              <motion.p
+                className="text-sm sm:text-lg text-gray-400 font-mono tracking-wide"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                Stake LP on the left. Click game on the right.
+              </motion.p>
+              <motion.div
+                className="text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2 font-mono tracking-wide flex items-center justify-center gap-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+              >
+                <span>
+                  {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+                </span>
+                {isLoggedIn && address && (
+                  <div className="flex items-center gap-1 ml-2">
+                    {/* Copy Address Button */}
+                    <button
+                      onClick={copyAddressToClipboard}
+                      className="p-1 hover:bg-gray-700 rounded transition-colors"
+                      title="Copy address to clipboard"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    
+                    {/* Open in Explorer Button */}
+                    <button
+                      onClick={openAddressInExplorer}
+                      className="p-1 hover:bg-gray-700 rounded transition-colors"
+                      title="Open address in explorer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                    
+                    {/* Disconnect Button */}
+                    <button
+                      onClick={handleDisconnect}
+                      className="p-1 hover:bg-red-700 rounded transition-colors"
+                      title="Disconnect wallet"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Split layout */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          {/* RARE Fee Status */}
+          {isLoggedIn && address && (
+            <div className="mb-4 sm:mb-6">
+              <motion.div
+                className="bg-gradient-to-r from-orange-900/50 to-red-900/50 border border-orange-500/50 rounded-lg p-3 sm:p-4 text-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                  <span className="text-sm sm:text-base font-mono text-orange-300">
+                    RARE Fee Status: {hasEnoughRare ? '✅ Ready (≥10 RARE)' : '❌ Insufficient (<10 RARE)'}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      if (address) {
+                        const hasRare = await smartContractService.hasEnoughRareTokens(address);
+                        setHasEnoughRare(hasRare);
+                      }
+                    }}
+                    className="text-orange-400 hover:text-orange-300 underline text-xs sm:text-sm font-mono"
+                  >
+                    Refresh Balance
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Connection Status */}
+          {!isLoggedIn && (
+            <div className="mb-6 sm:mb-8">
+              <motion.div
+                className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/50 rounded-lg p-4 sm:p-6 text-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <h3 className="text-lg sm:text-xl font-bold text-purple-400 font-mono mb-2 tracking-wide">
+                  Connect Your Wallet
+                </h3>
+                <p className="text-sm sm:text-base text-gray-300 font-mono tracking-wide mb-3 sm:mb-4">
+                  Connect your wallet to view real-time staking data and interact with the smart contract.
+                </p>
+                <motion.button
+                  onClick={handleConnectWallet}
+                  className="px-6 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300 text-sm sm:text-base"
+                  style={{
+                    boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
+                    textShadow: '0 0 10px rgba(147, 51, 234, 0.8)',
+                    imageRendering: 'pixelated'
+                  }}
+                  whileHover={{
+                    boxShadow: '0 0 30px rgba(147, 51, 234, 0.7), 0 0 60px rgba(147, 51, 234, 0.5)',
+                    scale: 1.05
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  CONNECT WALLET
+                </motion.button>
+              </motion.div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left: Farm 116 */}
+            <div>
+              {loading && (
+                <div className="text-center py-8">
+                  <div className="text-yellow-400 font-mono tracking-wide">Loading farm...</div>
+                </div>
+              )}
+
+              {error && (
+                <div className="text-center py-8">
+                  <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-4 mb-4">
+                    <div className="text-red-400 font-mono tracking-wide mb-2">Smart Contract Error</div>
+                    <div className="text-gray-300 font-mono tracking-wide text-sm">{error}</div>
+                  </div>
+                </div>
+              )}
+
+              {!loading && !error && farm116 && (
+                <motion.div
+                  className="relative bg-gradient-to-b from-gray-900 to-black border-2 sm:border-4 p-4 sm:p-6 font-mono"
+                  style={{
+                    borderColor: farmColor,
+                    boxShadow: `0 0 20px ${farmColor}20, inset 0 0 20px ${farmColor}10`,
+                    imageRendering: 'pixelated',
+                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
+                  }}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <div className="text-center mb-4 sm:mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-white font-mono mb-1 sm:mb-2 tracking-wide" style={{ textShadow: `0 0 5px ${farmColor}`, letterSpacing: '0.1em' }}>
+                      Farm #{farm116.farm.id}
+                    </h3>
+                    <div className="text-2xl sm:text-3xl font-bold font-mono tracking-wider" style={{ color: farmColor, textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`, letterSpacing: '0.1em' }}>
+                      {calculateAPR(farm116)}% APR
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
+                      <div className="flex items-center justify-center space-x-2">
+                        {/* For LP tokens, show the underlying tokens using new MEX pairs API */}
+                        {(() => {
+                          // Find the LP pair to get baseId and quoteId from MEX pairs
+                          const lpPair = smartContractService.findLPPair(farm116.stakingToken);
+                          
+                          if (lpPair) {
+                            // Show the two underlying tokens on the left, reward tokens on the right
+                            return (
+                              <>
+                                <img 
+                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${lpPair.token1lp}/icon.png`}
+                                  alt={lpPair.token1lp}
+                                  className="w-6 h-6 rounded-full"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <img 
+                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${lpPair.token2lp}/icon.png`}
+                                  alt={lpPair.token2lp}
+                                  className="w-6 h-6 rounded-full"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <span>/</span>
+                                {/* Show multiple reward tokens for multi-reward farms */}
+                                {farm116.isMultiReward && farm116.rewardTokens ? (
+                                  <div className="flex space-x-1">
+                                    {farm116.rewardTokens.map((token: string, index: number) => (
+                                      <img 
+                                        key={index}
+                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
+                                        alt={token}
+                                        className="w-6 h-6 rounded-full"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <img 
+                                    src={`https://tools.multiversx.com/assets-cdn/tokens/${farm116.farm.reward_token}/icon.png`}
+                                    alt={farm116.farm.reward_token}
+                                    className="w-6 h-6 rounded-full"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                              </>
+                            );
+                          } else {
+                            // Fallback to original staking token
+                            return (
+                              <>
+                                <img 
+                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${farm116.stakingToken}/icon.png`}
+                                  alt={farm116.stakingToken}
+                                  className="w-6 h-6 rounded-full"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <span>/</span>
+                                {/* Show multiple reward tokens for multi-reward farms */}
+                                {farm116.isMultiReward && farm116.rewardTokens ? (
+                                  <div className="flex space-x-1">
+                                    {farm116.rewardTokens.map((token: string, index: number) => (
+                                      <img 
+                                        key={index}
+                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
+                                        alt={token}
+                                        className="w-6 h-6 rounded-full"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <img 
+                                    src={`https://tools.multiversx.com/assets-cdn/tokens/${farm116.farm.reward_token}/icon.png`}
+                                    alt={farm116.farm.reward_token}
+                                    className="w-6 h-6 rounded-full"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                              </>
+                            );
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
+                      <span className="text-white font-mono tracking-wide">
+                        {farm116.totalStakedUSD && farm116.totalStakedUSD > 0 ? `$${farm116.totalStakedUSD.toFixed(2)}` : formatBalance(farm116.totalStaked)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
+                      <span className="text-white font-mono tracking-wide">{formatBalance(getUserStakedBalance(farm116.farm.id))}</span>
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
+                      <span className="text-yellow-400 font-mono tracking-wide">{formatBalance(getUserHarvestableRewards(farm116.farm.id))}</span>
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-gray-400 font-mono tracking-wide">Status:</span>
+                      <span className={`font-mono tracking-wide ${farm116.isActive ? 'text-green-400' : 'text-red-400'}`}>{farm116.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 sm:space-y-3">
+                    <button
+                      onClick={() => handleStakeClick(farm116)}
+                      disabled={!hasEnoughRare}
+                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${!hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white border-green-500'}`}
+                      style={{ imageRendering: 'pixelated' }}
+                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to stake' : ''}
+                    >
+                      STAKE
+                    </button>
+                    <button
+                      onClick={() => handleUnstakeClick(farm116)}
+                      disabled={parseFloat(getUserStakedBalance(farm116.farm.id)) <= 0 || !hasEnoughRare}
+                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${parseFloat(getUserStakedBalance(farm116.farm.id)) <= 0 || !hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white border-red-500'}`}
+                      style={{ imageRendering: 'pixelated' }}
+                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm116.farm.id)) <= 0 ? 'No tokens staked' : ''}
+                    >
+                      UNSTAKE
+                    </button>
+                    <button
+                      onClick={() => handleHarvestClick(farm116)}
+                      disabled={parseFloat(getUserHarvestableRewards(farm116.farm.id)) <= 0 || !hasEnoughRare}
+                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${parseFloat(getUserHarvestableRewards(farm116.farm.id)) <= 0 || !hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'}`}
+                      style={{ imageRendering: 'pixelated' }}
+                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : parseFloat(getUserHarvestableRewards(farm116.farm.id)) <= 0 ? 'No rewards available' : ''}
+                    >
+                      HARVEST
+                    </button>
+                  </div>
+
+                  <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{
+                      background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${farmColor}20 2px, ${farmColor}20 4px)`,
+                      boxShadow: `0 0 30px ${farmColor}40, inset 0 0 20px ${farmColor}20`
+                    }}
+                  />
+                </motion.div>
+              )}
+
+              {!loading && !error && !farm116 && (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 font-mono tracking-wide">Farm 116 not found.</div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Click counter game */}
+            <div>
+              <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 h-full flex flex-col items-center justify-center">
+                <div className="text-center mb-4">
+                  <div className="text-lg sm:text-xl font-bold text-purple-400 font-mono tracking-wider">Jorkin Clicks</div>
+                  <div className="text-3xl sm:text-4xl font-bold text-white font-mono mt-1">{clickCount}</div>
+                </div>
+
+                <motion.button
+                  onClick={handleClickGame}
+                  className="relative w-full max-w-sm border-2 border-purple-500 rounded-lg overflow-hidden group"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <video
+                    ref={videoRef}
+                    src="/assets/img/jorking.mp4"
+                    preload="auto"
+                    playsInline
+                    muted
+                    className="w-full h-auto object-cover"
+                  />
+                  <div className="absolute inset-0 ring-0 group-active:ring-4 ring-purple-500/50 pointer-events-none" />
+                </motion.button>
+
+                <div className="text-xs text-gray-400 font-mono mt-3">Tap to play and increment the counter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {selectedFarm && (
+          <StakingModal
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            modalType={modalType}
+            farmId={selectedFarm.farm.id}
+            stakingToken={selectedFarm.stakingToken}
+            userStakedBalance={getUserStakedBalance(selectedFarm.farm.id)}
+            onSuccess={handleModalSuccess}
+          />
+        )}
+      </div>
+    </AuthRedirectWrapper>
+  );
+};
+
+export default JorkinRoomPage;
+
+
