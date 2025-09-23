@@ -732,7 +732,7 @@ const JorkinRoomPage = () => {
                   </div>
                 )}
 
-                <div className="text-xs text-gray-400 font-mono mt-3">{isPlaying ? 'Jorkin as fast as you can!' : timeLeftMs === 0 ? 'Press Start to play (12s)' : 'Time up! Press Restart'}</div>
+                <div className="text-xs text-gray-400 font-mono mt-3">{isPlaying ? 'Jorkin as fast as you can!' : timeLeftMs === 0 ? 'Press Start to play (8s)' : 'Time up! Press Restart'}</div>
                 <style jsx>{`
                   @keyframes emojiBurst {
                     0% {
