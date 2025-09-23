@@ -768,6 +768,28 @@ const JorkinRoomPage = () => {
           </div>
         )}
 
+        {/* Enter Elevator Button */}
+        <div className="text-center mt-6 sm:mt-8">
+          <motion.button
+            onClick={() => window.location.href = '/motel'}
+            className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold font-mono tracking-wider border-2 border-purple-400 rounded-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
+            style={{
+              boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(147, 51, 234, 0.3)',
+              textShadow: '0 0 10px rgba(147, 51, 234, 0.8)',
+              imageRendering: 'pixelated'
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            whileHover={{
+              boxShadow: '0 0 30px rgba(147, 51, 234, 0.7), 0 0 60px rgba(147, 51, 234, 0.5)',
+              scale: 1.05
+            }}
+          >
+            ENTER ELEVATOR
+          </motion.button>
+        </div>
+
         {selectedFarm && (
           <StakingModal
             isOpen={modalOpen}
