@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { motion } from "motion/react";
 import Image from 'next/image';
 import { useGetAccountInfo, useGetIsLoggedIn, useGetNetworkConfig, UnlockPanelManager } from '@/lib';
@@ -31,7 +32,18 @@ const JorkinRoomPage = () => {
 
   // Click game state
   const [clickCount, setClickCount] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [timeLeftMs, setTimeLeftMs] = useState<number>(0); // milliseconds
+  const timerRef = useRef<number | null>(null);
+  const endTimeRef = useRef<number | null>(null);
+  const clickCountRef = useRef<number>(0);
+  const [showResult, setShowResult] = useState<boolean>(false);
+  const [resultCount, setResultCount] = useState<number>(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const clickAreaRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [emojiBursts, setEmojiBursts] = useState<Array<{ id: number; x: number; y: number; vx: number; vy: number; rot: number; char: string; size: number; duration: number; delay: number }>>([]);
+  const EMOJIS = ["🍆","🍑","😩","👉","👌","💦","🔞","🤤","🍌","👙","🍑","👙"];
 
   const fetchData = async () => {
     try {
@@ -171,8 +183,40 @@ const JorkinRoomPage = () => {
     unlockPanelManager.openUnlockPanel();
   }
 
-  // Click game handler
-  function handleClickGame() {
+  // Click game logic
+  function startGame() {
+    if (isPlaying) return;
+    setClickCount(0);
+    setTimeLeftMs(8000);
+    setIsPlaying(true);
+    setShowResult(false);
+
+    endTimeRef.current = Date.now() + 8000;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    timerRef.current = window.setInterval(() => {
+      if (!endTimeRef.current) return;
+      const remaining = Math.max(0, endTimeRef.current - Date.now());
+      setTimeLeftMs(remaining);
+      if (remaining <= 0) {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        endTimeRef.current = null;
+        setIsPlaying(false);
+        setResultCount(clickCountRef.current);
+        setShowResult(true);
+      }
+    }, 50);
+  }
+
+  // Handle clicks only while playing
+  function handleClickGame(e: React.MouseEvent<HTMLButtonElement>) {
+    if (!isPlaying || showResult) return;
     setClickCount(prev => prev + 1);
     const video = videoRef.current;
     if (video) {
@@ -184,7 +228,53 @@ const JorkinRoomPage = () => {
         }
       } catch {}
     }
+    // Emoji bursts: 3-4 per click, spawn on circular edge and fly outward
+    const mediaEl = buttonRef.current;
+    if (!mediaEl) return;
+    const rect = mediaEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const radius = Math.min(rect.width, rect.height) / 2;
+    const count = 3 + Math.floor(Math.random() * 2); // 3-4
+    const speedMin = 700;
+    const speedMax = 1300;
+    const newEmojis: Array<{ id: number; x: number; y: number; vx: number; vy: number; rot: number; char: string; size: number; duration: number; delay: number }> = [];
+
+    for (let i = 0; i < count; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const speed = speedMin + Math.random() * (speedMax - speedMin);
+      const x = cx + Math.cos(theta) * (radius + 12);
+      const y = cy + Math.sin(theta) * (radius + 12);
+      const vx = Math.cos(theta) * speed;
+      const vy = Math.sin(theta) * speed;
+      const id = Date.now() + Math.random();
+      const rot = (Math.random() - 0.5) * 240;
+      const char = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+      const size = 20 + Math.random() * 12;
+      const duration = 900 + Math.random() * 1300;
+      const delay = Math.random() * 80;
+      newEmojis.push({ id, x, y, vx, vy, rot, char, size, duration, delay });
+    }
+
+    newEmojis.forEach(({ id, duration, delay }) => {
+      setTimeout(() => {
+        setEmojiBursts(prev => prev.filter(ei => ei.id !== id));
+      }, duration + delay + 100);
+    });
+    setEmojiBursts(prev => [...prev, ...newEmojis]);
   }
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Keep latest click count in a ref for timer end use
+  useEffect(() => {
+    clickCountRef.current = clickCount;
+  }, [clickCount]);
 
   const farmColor = useMemo(() => (farm116 ? getFarmColor(farm116.farm.id) : '#8A2BE2'), [farm116]);
 
@@ -545,32 +635,111 @@ const JorkinRoomPage = () => {
             {/* Right: Click counter game */}
             <div>
               <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 h-full flex flex-col items-center justify-center">
-                <div className="text-center mb-4">
-                  <div className="text-lg sm:text-xl font-bold text-purple-400 font-mono tracking-wider">Jorkin Clicks</div>
+                <div className="text-center mb-3 sm:mb-4">
+                  <div className="text-lg sm:text-xl font-bold text-purple-400 font-mono tracking-wider">Speed Jorkin</div>
                   <div className="text-3xl sm:text-4xl font-bold text-white font-mono mt-1">{clickCount}</div>
                 </div>
 
-                <motion.button
-                  onClick={handleClickGame}
-                  className="relative w-full max-w-sm border-2 border-purple-500 rounded-lg overflow-hidden group"
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <video
-                    ref={videoRef}
-                    src="/assets/img/jorking.mp4"
-                    preload="auto"
-                    playsInline
-                    muted
-                    className="w-full h-auto object-cover"
-                  />
-                  <div className="absolute inset-0 ring-0 group-active:ring-4 ring-purple-500/50 pointer-events-none" />
-                </motion.button>
 
-                <div className="text-xs text-gray-400 font-mono mt-3">Tap to play and increment the counter</div>
+                <div ref={clickAreaRef} className="relative w-full flex justify-center">
+                  {/* Full-screen emoji burst layer */}
+                  <div className="pointer-events-none fixed inset-0 z-10">
+                    {emojiBursts.map(em => (
+                      <span
+                        key={em.id}
+                        style={{
+                          position: 'absolute',
+                          left: `${em.x}px`,
+                          top: `${em.y}px`,
+                          fontSize: `${em.size}px`,
+                          filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.8))',
+                          animation: `emojiBurst ${em.duration}ms ease-out forwards`,
+                          animationDelay: `${em.delay}ms`,
+                          '--vx': `${em.vx}px`,
+                          '--vy': `${em.vy}px`,
+                          '--rot': `${em.rot}deg`
+                        } as CSSProperties}
+                      >{em.char}</span>
+                    ))}
+                  </div>
+                  <motion.button
+                    ref={buttonRef}
+                    onClick={handleClickGame}
+                    disabled={!isPlaying}
+                    className={`relative w-44 h-44 sm:w-64 sm:h-64 border-2 rounded-full overflow-hidden group p-1.5 sm:p-2 bg-black ${!isPlaying ? 'cursor-not-allowed opacity-60' : 'border-purple-500'}`}
+                    whileTap={isPlaying ? { scale: 0.98 } : undefined}
+                  >
+                    <video
+                      ref={videoRef}
+                      src="/assets/img/jorking.mp4"
+                      preload="auto"
+                      playsInline
+                      muted
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 sm:w-40 sm:h-40 object-contain bg-black transform -scale-x-100"
+                    />
+                    <div className="absolute inset-0 ring-0 group-active:ring-4 ring-purple-500/50 pointer-events-none" />
+                  </motion.button>
+
+                  {/* Start/Restart overlay above media (not nested inside disabled button) */}
+                  {!isPlaying && !showResult && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center">
+                      <motion.button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); startGame(); }}
+                        className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-mono font-bold border-2 border-purple-400 rounded-lg shadow-lg"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                          {timeLeftMs === 0 ? 'Jork' : 'Jork'}
+                      </motion.button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Timer below media, outside the square */}
+                {isPlaying && (
+                  <div className="mt-2 text-center">
+                    <div className="text-white font-mono font-bold text-3xl sm:text-4xl">
+                      {(timeLeftMs / 1000).toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-gray-400 font-mono mt-3">{isPlaying ? 'Jorkin as fast as you can!' : timeLeftMs === 0 ? 'Press Start to play (12s)' : 'Time up! Press Restart'}</div>
+                <style jsx>{`
+                  @keyframes emojiBurst {
+                    0% {
+                      transform: translate(0, 0) rotate(0deg) scale(0.9);
+                      opacity: 1;
+                    }
+                    100% {
+                      transform: translate(var(--vy, 0px), var(--vx, 0px)) rotate(var(--rot, 0deg)) scale(1.1);
+                      opacity: 0;
+                    }
+                  }
+                `}</style>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Result Modal */}
+        {showResult && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/70" />
+            <div className="relative z-10 max-w-sm w-[90%] bg-gray-900 border-2 border-purple-500 rounded-xl p-5 text-center shadow-2xl">
+              <div className="text-2xl font-mono font-bold text-white mb-2">Congratulations!</div>
+              <div className="text-gray-300 font-mono mb-3">you jorked <span className="text-purple-400 font-bold">{resultCount}</span> times</div>
+              <div className="text-gray-400 font-mono mb-5">you can always jork faster and better</div>
+              <button
+                onClick={() => setShowResult(false)}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-mono font-bold border-2 border-purple-400 rounded-lg"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {selectedFarm && (
           <StakingModal

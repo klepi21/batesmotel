@@ -293,6 +293,9 @@ const BatesMotel3D = () => {
                 }
                 
                 // Handle floor-specific navigation
+                if (floor.id === -1) {
+                  router.push(RouteNamesEnum.jorkinroom);
+                } else
                 if (floor.id === 1) {
                   router.push(RouteNamesEnum.lpstaking);
                 } else if (floor.id === 2) {
