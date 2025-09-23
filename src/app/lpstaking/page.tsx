@@ -88,6 +88,13 @@ const LpStakingPage = () => {
     return userReward ? formatBalance(userReward.harvestableAmount) : '0';
   };
 
+  // Helper: per-token rewards list for multi-reward farms
+  const getUserRewardsByFarm = (farmId: string): { token: string; amount: string; decimals: number }[] => {
+    return userRewards
+      .filter(ur => ur.farmId === farmId)
+      .map(r => ({ token: r.rewardToken, amount: r.harvestableAmount, decimals: smartContractService.getTokenDecimals(r.rewardToken) }));
+  };
+
   // Helper functions for address actions
   const copyAddressToClipboard = async () => {
     if (address) {
@@ -600,7 +607,25 @@ const LpStakingPage = () => {
                           <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
                             <span className="text-yellow-400 font-mono tracking-wide">
-                              {formatBalance(getUserHarvestableRewards(farm.farm.id))}
+                              {!farm.isMultiReward ? (
+                                formatBalance(getUserHarvestableRewards(farm.farm.id))
+                              ) : (
+                                <span className="block text-right">
+                                  {getUserRewardsByFarm(farm.farm.id).length === 0 && '0'}
+                                  {getUserRewardsByFarm(farm.farm.id).map((r, idx) => (
+                                    <span key={r.token + idx} className="flex items-center justify-end gap-1">
+                                      <img
+                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${r.token}/icon.png`}
+                                        alt={r.token}
+                                        className="w-4 h-4 rounded-full"
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                      />
+                                      <span>{formatBalance(r.amount, r.decimals)}</span>
+                                      <span className="text-gray-400">{r.token.split('-')[0]}</span>
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
                             </span>
                           </div>
                           <div className="flex justify-between text-xs sm:text-sm">
