@@ -13,9 +13,9 @@ const robotoCondensed = Roboto_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: 'BatesMote',
+  title: 'Bates Motel',
   description:
-    'BatesMote - A MultiversX dApp providing the basics for MultiversX authentication and TX signing.',
+    'Bates Motel - A MultiversX dApp with authentication, staking, LP, and on-chain interactions.',
   viewport: {
     width: 'device-width',
     initialScale: 1
