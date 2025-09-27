@@ -83,17 +83,38 @@ const LpStakingPage = () => {
 
   // Helper function to get token image URL with manual fallbacks
   const getTokenImageUrl = (tokenIdentifier: string): string => {
-    // Manual token images for tokens that don't have images on MultiversX CDN
-    const manualTokenImages: { [key: string]: string } = {
-      'DBATES-78f441': '/assets/img/DBATES.png',
-      'BATES-bb3dd6': '/assets/img/BATES.png'
+    // Manual token identifiers for specific farms - use CDN URLs with specific identifiers
+    const manualTokenIdentifiers: { [key: string]: string } = {
+      'DBATES-78f441': 'https://tools.multiversx.com/assets-cdn/tokens/DBATES-78f441/icon.png',
+      'BATES-bb3dd6': 'https://tools.multiversx.com/assets-cdn/tokens/BATES-bb3dd6/icon.png',
+      'RARE-99e8b0': 'https://tools.multiversx.com/assets-cdn/tokens/RARE-99e8b0/icon.png'
     };
 
-    if (manualTokenImages[tokenIdentifier]) {
-      return manualTokenImages[tokenIdentifier];
+    // Use manual identifier if available, otherwise use the original
+    if (manualTokenIdentifiers[tokenIdentifier]) {
+      return manualTokenIdentifiers[tokenIdentifier];
     }
 
     return `https://tools.multiversx.com/assets-cdn/tokens/${tokenIdentifier}/icon.png`;
+  };
+
+  // Helper function to get LP pair tokens for specific farms
+  const getLPPairTokens = (farmId: string, stakingToken: string): { token1: string; token2: string } | null => {
+    // Special handling for farms 124 and 125
+    if (farmId === '124') {
+      return { token1: 'RARE-99e8b0', token2: 'BATES-bb3dd6' };
+    }
+    if (farmId === '125') {
+      return { token1: 'BATES-bb3dd6', token2: 'DBATES-78f441' };
+    }
+    
+    // For other farms, use the LP pair data
+    const lpPair = smartContractService.findLPPair(stakingToken);
+    if (lpPair) {
+      return { token1: lpPair.token1lp, token2: lpPair.token2lp };
+    }
+    
+    return null;
   };
 
   // Helper function to get user's staked balance for a farm
@@ -475,7 +496,14 @@ const LpStakingPage = () => {
                     .map((farm, index) => {
                     const farmColor = getFarmColor(farm.farm.id);
                     
-                    // Detailed logging for farm
+                    // Debug logging for farm tokens
+                    if (farm.farm.id === '124' || farm.farm.id === '125') {
+                      console.log(`Farm ${farm.farm.id} staking token:`, farm.stakingToken);
+                      const lpPair = smartContractService.findLPPair(farm.stakingToken);
+                      if (lpPair) {
+                        console.log(`Farm ${farm.farm.id} LP pair tokens:`, lpPair.token1lp, lpPair.token2lp);
+                      }
+                    }
                     
                     return (
                       <motion.div
@@ -510,24 +538,24 @@ const LpStakingPage = () => {
                             <div className="flex items-center justify-center space-x-2">
                               {/* For LP tokens, show the underlying tokens using new MEX pairs API */}
                               {(() => {
-                                // Find the LP pair to get baseId and quoteId from MEX pairs
-                                const lpPair = smartContractService.findLPPair(farm.stakingToken);
+                                // Get LP pair tokens (with special handling for farms 124 and 125)
+                                const lpPairTokens = getLPPairTokens(farm.farm.id, farm.stakingToken);
                                 
-                                if (lpPair) {
+                                if (lpPairTokens) {
                                   // Show the two underlying tokens on the left, reward tokens on the right
                                   return (
                                     <>
                                         <img 
-                                         src={getTokenImageUrl(lpPair.token1lp)}
-                                          alt={lpPair.token1lp}
+                                         src={getTokenImageUrl(lpPairTokens.token1)}
+                                          alt={lpPairTokens.token1}
                                           className="w-6 h-6 rounded-full"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                           }}
                                         />
                                         <img 
-                                         src={getTokenImageUrl(lpPair.token2lp)}
-                                          alt={lpPair.token2lp}
+                                         src={getTokenImageUrl(lpPairTokens.token2)}
+                                          alt={lpPairTokens.token2}
                                           className="w-6 h-6 rounded-full"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
