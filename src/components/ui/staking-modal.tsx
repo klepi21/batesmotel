@@ -181,8 +181,22 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       
       // Use adjusted balance for farm 117, regular balance for others
       const adjustedBalance = getAdjustedBalance(userBalance, decimals);
-      // Remove decimals and don't round up - just truncate
-      const maxAmount = Math.floor(parseFloat(adjustedBalance)).toString();
+      
+      // Special handling for LP staking - reduce by 2% (98% of balance)
+      // Check if this is an LP token (contains LP in the identifier)
+      const isLPToken = stakingToken.includes('LP') || stakingToken.includes('lp');
+      
+      let maxAmount;
+      if (isLPToken) {
+        // For LP tokens, use 98% of the balance (2% less)
+        const balanceNum = parseFloat(adjustedBalance);
+        const reducedBalance = balanceNum * 0.98; // 98% of balance
+        maxAmount = Math.floor(reducedBalance).toString();
+      } else {
+        // For regular tokens, remove decimals and don't round up - just truncate
+        maxAmount = Math.floor(parseFloat(adjustedBalance)).toString();
+      }
+      
       setAmount(maxAmount);
     } else {
       const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
