@@ -180,15 +180,17 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       // Setting max amount for stake
       
       // Use adjusted balance for farm 117, regular balance for others
-      const maxAmount = getAdjustedBalance(userBalance, decimals);
-      // Formatted max amount
+      const adjustedBalance = getAdjustedBalance(userBalance, decimals);
+      // Remove decimals and don't round up - just truncate
+      const maxAmount = Math.floor(parseFloat(adjustedBalance)).toString();
       setAmount(maxAmount);
     } else {
       const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
       // Setting max amount for unstake
       
-      const maxAmount = formatBalance(userStakedBalance, decimals);
-      // Formatted max amount
+      const formattedBalance = formatBalance(userStakedBalance, decimals);
+      // Remove decimals and don't round up - just truncate
+      const maxAmount = Math.floor(parseFloat(formattedBalance)).toString();
       setAmount(maxAmount);
     }
   };
