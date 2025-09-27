@@ -299,7 +299,7 @@ const BatesMotel3D = () => {
                   router.push(RouteNamesEnum.lpstaking);
                 } else if (floor.id === 2) {
                   router.push(RouteNamesEnum.stakingrooms);
-                } else if (floor.id === 3 || floor.id === 4 || floor.id === 6) {
+                } else if (floor.id === 3 || floor.id === 4 || floor.id === 6 || floor.id === -2) {
                   // Show under construction message
                   alert('🚧 This floor is under construction. Please check back later! 🚧');
                 } else if (floor.id === 5) {
