@@ -98,8 +98,13 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       
       if (modalType === 'stake') {
         // Check if user has enough balance
-        const userBalanceNum = parseFloat(userBalance) / Math.pow(10, stakingToken === 'LOKD-ff8f08' ? 6 : 18);
-        if (parseFloat(amount) > userBalanceNum) {
+        const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+        const userBalanceNum = parseFloat(userBalance) / Math.pow(10, decimals);
+        
+        // For farm 117, use adjusted balance (minus 15) for validation
+        const availableBalance = farmId === '117' ? Math.max(0, userBalanceNum - 15) : userBalanceNum;
+        
+        if (parseFloat(amount) > availableBalance) {
           toast.error('Insufficient balance');
           return;
         }
@@ -159,13 +164,23 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     }
   };
 
+  // Special handling for farm 117 - adjust balance display and max amount
+  const getAdjustedBalance = (balance: string, decimals: number = 18): string => {
+    if (farmId === '117' && modalType === 'stake') {
+      const num = parseFloat(balance) / Math.pow(10, decimals);
+      const adjustedNum = Math.max(0, num - 15); // Subtract 15, but don't go below 0
+      return adjustedNum.toFixed(18);
+    }
+    return formatBalance(balance, decimals);
+  };
+
   const setMaxAmount = () => {
     if (modalType === 'stake') {
       const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
       // Setting max amount for stake
       
-      // Simply use the formatted balance that's already displayed
-      const maxAmount = formatBalance(userBalance, decimals);
+      // Use adjusted balance for farm 117, regular balance for others
+      const maxAmount = getAdjustedBalance(userBalance, decimals);
       // Formatted max amount
       setAmount(maxAmount);
     } else {
@@ -247,7 +262,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
                   ) : (
                     <>
                       {modalType === 'stake' 
-                        ? formatBalance(userBalance, stakingToken === 'LOKD-ff8f08' ? 6 : 18)
+                        ? getAdjustedBalance(userBalance, stakingToken === 'LOKD-ff8f08' ? 6 : 18)
                         : formatBalance(userStakedBalance, stakingToken === 'LOKD-ff8f08' ? 6 : 18)
                       } {stakingToken.split('-')[0]}
                     </>

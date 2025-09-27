@@ -682,6 +682,12 @@ const LpStakingPage = () => {
                               {farm.isActive ? 'ACTIVE' : 'INACTIVE'}
                             </span>
                           </div>
+                          <div className="flex justify-between text-xs sm:text-sm">
+                            <span className="text-gray-400 font-mono tracking-wide">Fee Required:</span>
+                            <span className={`font-mono tracking-wide ${hasEnoughRare ? 'text-green-400' : 'text-red-400'}`}>
+                              {hasEnoughRare ? '10 RARE ✓' : '10 RARE ✗'}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Action Buttons */}

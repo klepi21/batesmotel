@@ -669,6 +669,12 @@ const JorkinRoomPage = () => {
                       <span className="text-gray-400 font-mono tracking-wide">Status:</span>
                       <span className={`font-mono tracking-wide ${farm116.isActive ? 'text-green-400' : 'text-red-400'}`}>{farm116.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
                     </div>
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-gray-400 font-mono tracking-wide">Fee Required:</span>
+                      <span className={`font-mono tracking-wide ${hasEnoughRare ? 'text-green-400' : 'text-red-400'}`}>
+                        {hasEnoughRare ? '10 RARE ✓' : '10 RARE ✗'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2 sm:space-y-3">
