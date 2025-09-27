@@ -81,6 +81,21 @@ const LpStakingPage = () => {
     });
   };
 
+  // Helper function to get token image URL with manual fallbacks
+  const getTokenImageUrl = (tokenIdentifier: string): string => {
+    // Manual token images for tokens that don't have images on MultiversX CDN
+    const manualTokenImages: { [key: string]: string } = {
+      'DBATES-78f441': '/assets/img/DBATES.png',
+      'BATES-bb3dd6': '/assets/img/BATES.png'
+    };
+
+    if (manualTokenImages[tokenIdentifier]) {
+      return manualTokenImages[tokenIdentifier];
+    }
+
+    return `https://tools.multiversx.com/assets-cdn/tokens/${tokenIdentifier}/icon.png`;
+  };
+
   // Helper function to get user's staked balance for a farm
   const getUserStakedBalance = (farmId: string) => {
     const userFarm = userFarms.find(uf => uf.farmId === farmId);
@@ -502,22 +517,22 @@ const LpStakingPage = () => {
                                   // Show the two underlying tokens on the left, reward tokens on the right
                                   return (
                                     <>
-                                      <img 
-                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${lpPair.token1lp}/icon.png`}
-                                        alt={lpPair.token1lp}
-                                        className="w-6 h-6 rounded-full"
-                                        onError={(e) => {
-                                          e.currentTarget.style.display = 'none';
-                                        }}
-                                      />
-                                      <img 
-                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${lpPair.token2lp}/icon.png`}
-                                        alt={lpPair.token2lp}
-                                        className="w-6 h-6 rounded-full"
-                                        onError={(e) => {
-                                          e.currentTarget.style.display = 'none';
-                                        }}
-                                      />
+                                        <img 
+                                         src={getTokenImageUrl(lpPair.token1lp)}
+                                          alt={lpPair.token1lp}
+                                          className="w-6 h-6 rounded-full"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                        <img 
+                                         src={getTokenImageUrl(lpPair.token2lp)}
+                                          alt={lpPair.token2lp}
+                                          className="w-6 h-6 rounded-full"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
                                       <span>/</span>
                                       {/* Show multiple reward tokens for multi-reward farms */}
                                       {farm.isMultiReward && farm.rewardTokens ? (
@@ -550,14 +565,14 @@ const LpStakingPage = () => {
                                   // Fallback to original staking token
                                   return (
                                     <>
-                                      <img 
-                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
-                                        alt={farm.stakingToken}
-                                        className="w-6 h-6 rounded-full"
-                                        onError={(e) => {
-                                          e.currentTarget.style.display = 'none';
-                                        }}
-                                      />
+                                        <img 
+                                         src={getTokenImageUrl(farm.stakingToken)}
+                                          alt={farm.stakingToken}
+                                          className="w-6 h-6 rounded-full"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
                                       <span>/</span>
                                       {/* Show multiple reward tokens for multi-reward farms */}
                                       {farm.isMultiReward && farm.rewardTokens ? (

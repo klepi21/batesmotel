@@ -87,6 +87,22 @@ const StakingRoomsPage = () => {
     }
   };
 
+  // Helper function to get token image URL with manual fallbacks
+  const getTokenImageUrl = (tokenIdentifier: string): string => {
+    // Manual token identifiers for specific farms - use CDN URLs with specific identifiers
+    const manualTokenIdentifiers: { [key: string]: string } = {
+      'DBATES-78f441': 'https://tools.multiversx.com/assets-cdn/tokens/DBATES-78f441/icon.png',
+      'BATES-bb3dd6': 'https://tools.multiversx.com/assets-cdn/tokens/BATES-bb3dd6/icon.png'
+    };
+
+    // Use manual identifier if available, otherwise use the original
+    if (manualTokenIdentifiers[tokenIdentifier]) {
+      return manualTokenIdentifiers[tokenIdentifier];
+    }
+
+    return `https://tools.multiversx.com/assets-cdn/tokens/${tokenIdentifier}/icon.png`;
+  };
+
   // Helper functions for address actions
   const copyAddressToClipboard = async () => {
     if (address) {
@@ -461,7 +477,10 @@ const StakingRoomsPage = () => {
                     .map((farm, index) => {
                     const farmColor = getFarmColor(farm.farm.id);
                     
-                    // Detailed logging for farm
+                    // Debug logging for farm tokens
+                    if (farm.farm.id === '118' || farm.farm.id === '120') {
+                      console.log(`Farm ${farm.farm.id} staking token:`, farm.stakingToken);
+                    }
                     
                     return (
                       <motion.div
@@ -496,7 +515,7 @@ const StakingRoomsPage = () => {
                             <div className="flex items-center justify-center space-x-2">
                               {/* For single token staking, show staking token and reward token */}
                               <img 
-                                src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
+                                src={getTokenImageUrl(farm.stakingToken)}
                                 alt={farm.stakingToken}
                                 className="w-6 h-6 rounded-full"
                                 onError={(e) => {
@@ -544,29 +563,29 @@ const StakingRoomsPage = () => {
                                   <span className="text-gray-400">(</span>
                                   <div className="flex items-center space-x-1">
                                     <img 
-                                      src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
+                                      src={getTokenImageUrl(farm.stakingToken)}
                                       alt={farm.stakingToken}
                                       className="w-4 h-4 rounded-full"
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';
                                       }}
                                     />
-                                    <span>{Math.round(parseFloat(formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)))}</span>
+                                    <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)}</span>
                                   </div>
                                   <span className="text-gray-400">)</span>
                                 </>
                               ) : (
-                                <div className="flex items-center space-x-1">
-                                  <img 
-                                    src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.stakingToken}/icon.png`}
-                                    alt={farm.stakingToken}
-                                    className="w-4 h-4 rounded-full"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                    }}
-                                  />
-                                  <span>{Math.round(parseFloat(formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)))}</span>
-                                </div>
+                                  <div className="flex items-center space-x-1">
+                                    <img 
+                                      src={getTokenImageUrl(farm.stakingToken)}
+                                      alt={farm.stakingToken}
+                                      className="w-4 h-4 rounded-full"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                    <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)}</span>
+                                  </div>
                               )}
                             </div>
                           </div>
