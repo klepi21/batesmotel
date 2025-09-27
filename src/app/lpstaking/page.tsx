@@ -37,7 +37,12 @@ const LpStakingPage = () => {
 
       // Fetch all farms
       const farmsData = await smartContractService.getAllFarms();
-      setFarms(farmsData);
+      
+      // Filter to show only farm IDs: 122, 123, 124, 125, 126
+      const allowedFarmIds = ['122', '123', '124', '125', '126'];
+      const filteredFarms = farmsData.filter(farm => allowedFarmIds.includes(farm.farm.id));
+      
+      setFarms(filteredFarms);
 
       // Fetch user-specific data if logged in
       if (isLoggedIn && address) {
@@ -449,13 +454,13 @@ const LpStakingPage = () => {
             {!loading && !error && farms.length > 0 && (
               <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                  {/* Filter farms to show ONLY farm 116 */}
+                  {/* Filter farms to show ONLY farm IDs 122, 123, 124, 125, 126 */}
                   {farms
-                    .filter(farm => farm.farm.id === '116')
+                    .filter(farm => ['122', '123', '124', '125', '126'].includes(farm.farm.id))
                     .map((farm, index) => {
                     const farmColor = getFarmColor(farm.farm.id);
                     
-                    // Detailed logging for farm 116
+                    // Detailed logging for farm
                     
                     return (
                       <motion.div

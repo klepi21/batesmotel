@@ -51,8 +51,10 @@ const JorkinRoomPage = () => {
       setError(null);
 
       const farmsData = await smartContractService.getAllFarms();
-      const only116 = farmsData.find(f => f.farm.id === '116') || null;
-      setFarm116(only116);
+      
+      const only127 = farmsData.find(f => f.farm.id === '127') || null;
+      
+      setFarm116(only127);
 
       if (isLoggedIn && address) {
         try {
