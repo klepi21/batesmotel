@@ -54,6 +54,19 @@ const JorkinRoomPage = () => {
       
       const only127 = farmsData.find(f => f.farm.id === '127') || null;
       
+      // Debug logging for farm 127
+      if (only127) {
+        console.log('=== JORKIN ROOM - FARM 127 DATA ===');
+        console.log('Farm 127 complete data:', only127);
+        console.log('Farm 127 isMultiReward:', only127.isMultiReward);
+        console.log('Farm 127 rewardTokens:', only127.rewardTokens);
+        console.log('Farm 127 calculatedAPR:', only127.calculatedAPR);
+        console.log('Farm 127 totalStaked:', only127.totalStaked);
+        console.log('Farm 127 totalRewards:', only127.totalRewards);
+        console.log('Farm 127 stakingToken:', only127.stakingToken);
+        console.log('Farm 127 isActive:', only127.isActive);
+      }
+      
       setFarm116(only127);
 
       if (isLoggedIn && address) {
@@ -62,6 +75,8 @@ const JorkinRoomPage = () => {
           setUserFarms(userFarmsData);
 
           const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+          
+          
           setUserRewards(userRewardsData);
 
           const hasRare = await smartContractService.hasEnoughRareTokens(address);
@@ -96,7 +111,7 @@ const JorkinRoomPage = () => {
     return userReward ? formatBalance(userReward.harvestableAmount) : '0';
   }
 
-  // Per-token rewards for multi-reward farm 116
+  // Per-token rewards for multi-reward farms
   function getUserRewardsByFarm(farmId: string): { token: string; amount: string; decimals: number }[] {
     return userRewards
       .filter(ur => ur.farmId === farmId)
@@ -138,13 +153,16 @@ const JorkinRoomPage = () => {
 
   function calculateAPR(farm: FarmInfo): number {
     try {
-      if (farm.isMultiReward && farm.calculatedAPR !== undefined) return farm.calculatedAPR;
+      if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
+        return farm.calculatedAPR;
+      }
+      
       const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
       const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
       if (totalStakedNum === 0) return 0;
       const apr = (totalRewardsNum / totalStakedNum) * 100 * 365;
       return Math.round(apr);
-    } catch {
+    } catch (error) {
       return 0;
     }
   }
@@ -504,7 +522,7 @@ const JorkinRoomPage = () => {
                       Farm #{farm116.farm.id}
                     </h3>
                     <div className="text-2xl sm:text-3xl font-bold font-mono tracking-wider" style={{ color: farmColor, textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`, letterSpacing: '0.1em' }}>
-                      {calculateAPR(farm116)}% APR
+                      {farm116.isMultiReward && calculateAPR(farm116) === 0 ? 'Rewards Pending' : `${calculateAPR(farm116)}% APR`}
                     </div>
                     <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
                       <div className="flex items-center justify-center space-x-2">
@@ -625,19 +643,24 @@ const JorkinRoomPage = () => {
                           formatBalance(getUserHarvestableRewards(farm116.farm.id))
                         ) : (
                           <span className="block text-right">
-                            {getUserRewardsByFarm(farm116.farm.id).length === 0 && '0'}
-                            {getUserRewardsByFarm(farm116.farm.id).map((r, idx) => (
-                              <span key={r.token + idx} className="flex items-center justify-end gap-1">
-                                <img
-                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${r.token}/icon.png`}
-                                  alt={r.token}
-                                  className="w-4 h-4 rounded-full"
-                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                                />
-                                <span>{formatBalance(r.amount, r.decimals)}</span>
-                                <span className="text-gray-400">{r.token.split('-')[0]}</span>
-                              </span>
-                            ))}
+                            {(() => {
+                              const rewards = getUserRewardsByFarm(farm116.farm.id);
+                              if (rewards.length === 0) {
+                                return '0';
+                              }
+                              return rewards.map((r, idx) => (
+                                <span key={r.token + idx} className="flex items-center justify-end gap-1">
+                                  <img
+                                    src={`https://tools.multiversx.com/assets-cdn/tokens/${r.token}/icon.png`}
+                                    alt={r.token}
+                                    className="w-4 h-4 rounded-full"
+                                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                  />
+                                  <span>{formatBalance(r.amount, r.decimals)}</span>
+                                  <span className="text-gray-400">{r.token.split('-')[0]}</span>
+                                </span>
+                              ));
+                            })()}
                           </span>
                         )}
                       </span>

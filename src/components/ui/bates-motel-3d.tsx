@@ -94,8 +94,10 @@ const BatesMotel3D = () => {
         let totalValue = 0;
         
         // Only calculate TVL from farms we actually display:
-        // Farm 115 (Staking page) and Farm 116 (LP staking page)
-        const displayedFarmIds = ['115', '116'];
+        // Simple staking: 117, 118, 119, 120, 121
+        // LP staking: 122, 123, 124, 125, 126
+        // Jorkin room: 127
+        const displayedFarmIds = ['117', '118', '119', '120', '121', '122', '123', '124', '125', '126', '127'];
         
         farms.forEach((farm) => {
           if (displayedFarmIds.includes(farm.farm.id) && farm.totalStakedUSD && farm.totalStakedUSD > 0) {

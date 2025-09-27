@@ -21,13 +21,27 @@ export const metadata: Metadata = {
     initialScale: 1
   },
   icons: {
-    icon: '/favicon.ico'
+    icon: '/favi.png'
   }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang='en' className={robotoCondensed.className}>
+      <head>
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-GPJK8KBL1X"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-GPJK8KBL1X');
+            `,
+          }}
+        />
+      </head>
       <body>
         <InitAppWrapper>
           <App>
