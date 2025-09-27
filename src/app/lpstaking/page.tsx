@@ -532,7 +532,7 @@ const LpStakingPage = () => {
                             textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`,
                             letterSpacing: '0.1em'
                           }}>
-                            {calculateAPR(farm)}% APR
+                            {farm.farm.id === '124' || farm.farm.id === '125' ? 'Huge Rewards' : `${calculateAPR(farm)}% APR`}
                           </div>
                           <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
                             <div className="flex items-center justify-center space-x-2">
