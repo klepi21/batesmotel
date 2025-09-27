@@ -286,20 +286,25 @@ const BatesMotel3D = () => {
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
               onClick={() => {
-                // Handle lobby floor (floor 0) - navigate to motel (entrance)
+                // Handle lobby floor (floor 0) - navigate to entrance
                 if (floor.id === 0) {
-                  router.push('/motel');
+                  router.push('/entrance');
                   return;
                 }
                 
                 // Handle floor-specific navigation
                 if (floor.id === -1) {
                   router.push(RouteNamesEnum.jorkinroom);
-                } else
-                if (floor.id === 1) {
+                } else if (floor.id === 1) {
                   router.push(RouteNamesEnum.lpstaking);
                 } else if (floor.id === 2) {
                   router.push(RouteNamesEnum.stakingrooms);
+                } else if (floor.id === 3 || floor.id === 4 || floor.id === 6) {
+                  // Show under construction message
+                  alert('🚧 This floor is under construction. Please check back later! 🚧');
+                } else if (floor.id === 5) {
+                  // Open Telegram link in new tab
+                  window.open('https://t.me/+-s1nbywYn5RiZGFh', '_blank');
                 }
                 // Add more floor navigation as needed
               }}
