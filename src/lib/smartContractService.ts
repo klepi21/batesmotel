@@ -522,6 +522,22 @@ export class SmartContractService {
                   totalStakedUSD = this.calculateTotalStakedUSD(totalStakedStr, directPrice);
                   lpPrice = directPrice;
                 }
+                
+                // Special handling for farm 127 - use specific jexchange API
+                if (farm.id?.toString() === '127' && stakingTokenStr === 'LPBATEJORK-bba5d2') {
+                  try {
+                    // Fetch price from jexchange API for LPBATEJORK-bba5d2
+                    const response = await fetch('https://api.jexchange.io/prices/LPBATEJORK-bba5d2');
+                    const priceData = await response.json();
+                    if (priceData && priceData.usdPrice) {
+                      const directPrice = parseFloat(priceData.usdPrice);
+                      totalStakedUSD = this.calculateTotalStakedUSD(totalStakedStr, directPrice);
+                      lpPrice = directPrice;
+                    }
+                  } catch (error) {
+                    console.error('Error fetching LPBATEJORK price:', error);
+                  }
+                }
               } else {
                 // Use token pair data for single tokens
                 const tokenPair = this.findTokenPrice(stakingTokenStr);

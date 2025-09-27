@@ -103,6 +103,39 @@ const JorkinRoomPage = () => {
       .map(r => ({ token: r.rewardToken, amount: r.harvestableAmount, decimals: smartContractService.getTokenDecimals(r.rewardToken) }));
   }
 
+  // Helper function to get token image URL with manual fallbacks
+  const getTokenImageUrl = (tokenIdentifier: string): string => {
+    // Manual token identifiers for specific farms - use CDN URLs with specific identifiers
+    const manualTokenIdentifiers: { [key: string]: string } = {
+      'DBATES-78f441': 'https://tools.multiversx.com/assets-cdn/tokens/DBATES-78f441/icon.png',
+      'BATES-bb3dd6': 'https://tools.multiversx.com/assets-cdn/tokens/BATES-bb3dd6/icon.png',
+      'JORKIN-7d6f75': 'https://tools.multiversx.com/assets-cdn/tokens/JORKIN-7d6f75/icon.png'
+    };
+
+    // Use manual identifier if available, otherwise use the original
+    if (manualTokenIdentifiers[tokenIdentifier]) {
+      return manualTokenIdentifiers[tokenIdentifier];
+    }
+
+    return `https://tools.multiversx.com/assets-cdn/tokens/${tokenIdentifier}/icon.png`;
+  };
+
+  // Helper function to get LP pair tokens for farm 127
+  const getLPPairTokens = (farmId: string, stakingToken: string): { token1: string; token2: string } | null => {
+    // Special handling for farm 127
+    if (farmId === '127') {
+      return { token1: 'BATES-bb3dd6', token2: 'JORKIN-7d6f75' };
+    }
+    
+    // For other farms, use the LP pair data
+    const lpPair = smartContractService.findLPPair(stakingToken);
+    if (lpPair) {
+      return { token1: lpPair.token1lp, token2: lpPair.token2lp };
+    }
+    
+    return null;
+  };
+
   function calculateAPR(farm: FarmInfo): number {
     try {
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) return farm.calculatedAPR;
@@ -477,24 +510,24 @@ const JorkinRoomPage = () => {
                       <div className="flex items-center justify-center space-x-2">
                         {/* For LP tokens, show the underlying tokens using new MEX pairs API */}
                         {(() => {
-                          // Find the LP pair to get baseId and quoteId from MEX pairs
-                          const lpPair = smartContractService.findLPPair(farm116.stakingToken);
+                          // Get LP pair tokens (with special handling for farm 127)
+                          const lpPairTokens = getLPPairTokens(farm116.farm.id, farm116.stakingToken);
                           
-                          if (lpPair) {
+                          if (lpPairTokens) {
                             // Show the two underlying tokens on the left, reward tokens on the right
                             return (
                               <>
                                 <img 
-                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${lpPair.token1lp}/icon.png`}
-                                  alt={lpPair.token1lp}
+                                  src={getTokenImageUrl(lpPairTokens.token1)}
+                                  alt={lpPairTokens.token1}
                                   className="w-6 h-6 rounded-full"
                                   onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                   }}
                                 />
                                 <img 
-                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${lpPair.token2lp}/icon.png`}
-                                  alt={lpPair.token2lp}
+                                  src={getTokenImageUrl(lpPairTokens.token2)}
+                                  alt={lpPairTokens.token2}
                                   className="w-6 h-6 rounded-full"
                                   onError={(e) => {
                                     e.currentTarget.style.display = 'none';
@@ -533,7 +566,7 @@ const JorkinRoomPage = () => {
                             return (
                               <>
                                 <img 
-                                  src={`https://tools.multiversx.com/assets-cdn/tokens/${farm116.stakingToken}/icon.png`}
+                                  src={getTokenImageUrl(farm116.stakingToken)}
                                   alt={farm116.stakingToken}
                                   className="w-6 h-6 rounded-full"
                                   onError={(e) => {
