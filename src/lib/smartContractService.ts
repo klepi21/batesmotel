@@ -502,6 +502,48 @@ export class SmartContractService {
     }
   }
 
+  async getSpecificFarms(farmIds: string[]): Promise<FarmInfo[]> {
+    try {
+      console.log(`🔍 Fetching specific farms: ${farmIds.join(', ')}`);
+      
+      // Temporarily disable verbose logging
+      const originalConsoleLog = console.log;
+      console.log = (...args) => {
+        // Only log if it's related to our target farms or important messages
+        const message = args.join(' ');
+        if (message.includes('Farm 128') || 
+            message.includes('Farm 129') || 
+            message.includes('Farm 130') || 
+            message.includes('Farm 131') || 
+            message.includes('Farm 132') || 
+            message.includes('Farm 133') || 
+            message.includes('Farm 134') || 
+            message.includes('Farm 135') ||
+            message.includes('Successfully fetched') ||
+            message.includes('Error fetching')) {
+          originalConsoleLog(...args);
+        }
+      };
+      
+      try {
+        // Use the existing getAllFarms but with reduced console logging
+        const allFarms = await this.getAllFarms();
+        
+        // Filter to only the farms we need
+        const filteredFarms = allFarms.filter(farm => farmIds.includes(farm.farm.id));
+        
+        console.log(`✅ Successfully filtered to ${filteredFarms.length} specific farms`);
+        return filteredFarms;
+      } finally {
+        // Restore original console.log
+        console.log = originalConsoleLog;
+      }
+    } catch (error) {
+      console.error('Error fetching specific farms:', error);
+      return [];
+    }
+  }
+
   async getAllFarms(): Promise<FarmInfo[]> {
     try {
       // Check cache first

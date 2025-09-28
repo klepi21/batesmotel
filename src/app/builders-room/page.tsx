@@ -35,14 +35,11 @@ const BuildersRoomPage = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch all farms
-      const farmsData = await smartContractService.getAllFarms();
-      
-      // Filter to show only farm IDs: 128, 129, 130, 131, 132, 133, 134, 135
+      // Fetch only the specific farms we need: 128, 129, 130, 131, 132, 133, 134, 135
       const allowedFarmIds = ['128', '129', '130', '131', '132', '133', '134', '135'];
-      const filteredFarms = farmsData.filter(farm => allowedFarmIds.includes(farm.farm.id));
+      const farmsData = await smartContractService.getSpecificFarms(allowedFarmIds);
       
-      setFarms(filteredFarms);
+      setFarms(farmsData);
 
       // Fetch user-specific data if logged in
       if (isLoggedIn && address) {
