@@ -198,6 +198,11 @@ export class SmartContractService {
   }
 
   findLPPair(stakingToken: string): LPPair | null {
+    // Debug logging for farm 128
+    if (stakingToken && stakingToken.includes('128') || stakingToken.startsWith('LP')) {
+      console.log(`🔍 findLPPair Debug for: ${stakingToken}`);
+    }
+    
     // Try to find exact match first
     let lpPair = this.lpPairs.find(pair => pair.lpidentifier === stakingToken);
     
@@ -209,6 +214,12 @@ export class SmartContractService {
         pair.token1lp.includes(tokenId) || 
         pair.token2lp.includes(tokenId)
       );
+      
+      // Debug logging for farm 128
+      if (stakingToken && stakingToken.includes('128') || stakingToken.startsWith('LP')) {
+        console.log(`- Exact match not found, trying partial match with tokenId: ${tokenId}`);
+        console.log(`- Found partial match:`, lpPair);
+      }
     }
     
     return lpPair || null;
@@ -574,8 +585,8 @@ export class SmartContractService {
                 }
               }
               
-              // Check if this is an LP token (starts with LP or contains USDC)
-              const isLPToken = stakingTokenStr.includes('USDC') || stakingTokenStr.startsWith('LP');
+              // Check if this is an LP token (starts with LP, contains USDC, or ends with LP)
+              const isLPToken = stakingTokenStr.includes('USDC') || stakingTokenStr.startsWith('LP') || stakingTokenStr.endsWith('LP');
               let lpPrice = 0;
               let totalStakedUSD = 0;
               
@@ -583,6 +594,17 @@ export class SmartContractService {
                 // Use LP pair data for LP tokens
                 const lpPair = this.findLPPair(stakingTokenStr);
                 lpPrice = lpPair ? parseFloat(lpPair.lpprice) : 0;
+                
+                // Debug logging for farm 128
+                if (farm.id?.toString() === '128') {
+                  console.log(`🔍 Farm 128 Debug:`);
+                  console.log(`- Staking Token: ${stakingTokenStr}`);
+                  console.log(`- Is LP Token: ${isLPToken}`);
+                  console.log(`- LP Pair Found:`, lpPair);
+                  console.log(`- LP Price: ${lpPrice}`);
+                  console.log(`- Total LP Pairs Available: ${this.lpPairs.length}`);
+                  console.log(`- First few LP pairs:`, this.lpPairs.slice(0, 3));
+                }
                 
                 totalStakedUSD = lpPrice > 0 ? this.calculateTotalStakedUSD(totalStakedStr, lpPrice) : 0;
                 
