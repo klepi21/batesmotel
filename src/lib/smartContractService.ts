@@ -396,8 +396,8 @@ export class SmartContractService {
       let stakedDollarValue = 0;
       
       console.log('Calculating staked dollar value...');
-      // Check if this is an LP token (starts with LP or contains USDC)
-      const isLPToken = stakingToken.includes('USDC') || stakingToken.startsWith('LP');
+      // Check if this is an LP token (starts with LP, contains USDC, ends with LP, or contains WEGLD)
+      const isLPToken = stakingToken.includes('USDC') || stakingToken.startsWith('LP') || stakingToken.endsWith('LP') || stakingToken.includes('WEGLD');
       console.log(`Is LP token: ${isLPToken}`);
       
       if (isLPToken) {
