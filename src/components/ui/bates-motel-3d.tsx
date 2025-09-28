@@ -305,8 +305,8 @@ const BatesMotel3D = () => {
                   // Show under construction message
                   alert('🚧 This floor is under construction. Please check back later! 🚧');
                 } else if (floor.id === 5) {
-                  // Open Telegram link in new tab
-                  window.open('https://t.me/+-s1nbywYn5RiZGFh', '_blank');
+                  // Navigate to builders room
+                  router.push('/builders-room');
                 }
                 // Add more floor navigation as needed
               }}
