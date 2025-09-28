@@ -83,10 +83,10 @@ const EntrancePage = () => {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // Area clicked - navigating to game room
-          router.push(RouteNamesEnum.gameroom);
+          // Area clicked - navigating to fudout.com
+          window.open('https://www.fudout.com/', '_blank');
         }}
-        title="Click to enter Game Room"
+        title="Click to visit FudOut"
       />
 
       {/* Mobile: Down-Right Half - Motel */}
