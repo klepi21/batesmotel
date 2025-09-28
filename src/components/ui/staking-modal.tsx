@@ -98,7 +98,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       
       if (modalType === 'stake') {
         // Check if user has enough balance
-        const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+        const decimals = getTokenDecimals(stakingToken);
         const userBalanceNum = parseFloat(userBalance) / Math.pow(10, decimals);
         
         // For farm 117, use adjusted balance (minus 15) for validation
@@ -118,7 +118,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
         );
       } else {
         // Check if user has enough staked balance
-        const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+        const decimals = getTokenDecimals(stakingToken);
         const stakedBalanceNum = parseFloat(userStakedBalance) / Math.pow(10, decimals);
         if (parseFloat(amount) > stakedBalanceNum) {
           toast.error('Insufficient staked balance');
@@ -164,6 +164,20 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     }
   };
 
+  // Helper function to get correct decimals for a staking token
+  const getTokenDecimals = (token: string): number => {
+    if (token === 'LOKD-ff8f08') {
+      return 6;
+    } else if (token === 'TCX-8d448d') {
+      return 8; // TCX has 8 decimals
+    } else if (token === 'TCXWEGLD-f1f2b1') {
+      return 18; // TCXWEGLD LP token has 18 decimals
+    } else if (token.includes('USDC') || token.includes('USDT')) {
+      return 6; // USDC/USDT typically have 6 decimals
+    }
+    return 18; // Default to 18 decimals
+  };
+
   // Special handling for farm 117 - adjust balance display and max amount
   const getAdjustedBalance = (balance: string, decimals: number = 18): string => {
     if (farmId === '117' && modalType === 'stake') {
@@ -176,7 +190,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
 
   const setMaxAmount = () => {
     if (modalType === 'stake') {
-      const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+      const decimals = getTokenDecimals(stakingToken);
       // Setting max amount for stake
       
       // Use adjusted balance for farm 117, regular balance for others
@@ -199,7 +213,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       
       setAmount(maxAmount);
     } else {
-      const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+      const decimals = getTokenDecimals(stakingToken);
       // Setting max amount for unstake
       
       const formattedBalance = formatBalance(userStakedBalance, decimals);
@@ -278,8 +292,8 @@ export const StakingModal: React.FC<StakingModalProps> = ({
                   ) : (
                     <>
                       {modalType === 'stake' 
-                        ? getAdjustedBalance(userBalance, stakingToken === 'LOKD-ff8f08' ? 6 : 18)
-                        : formatBalance(userStakedBalance, stakingToken === 'LOKD-ff8f08' ? 6 : 18)
+                        ? getAdjustedBalance(userBalance, getTokenDecimals(stakingToken))
+                        : formatBalance(userStakedBalance, getTokenDecimals(stakingToken))
                       } {stakingToken.split('-')[0]}
                     </>
                   )}

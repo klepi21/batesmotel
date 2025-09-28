@@ -133,7 +133,21 @@ const StakingRoomsPage = () => {
     if (!userFarm) return '0';
     
     // Use correct decimals for the staking token
-    const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+    let decimals = 18; // Default to 18 decimals
+    
+    if (stakingToken) {
+      // Check for specific tokens with different decimals
+      if (stakingToken === 'LOKD-ff8f08') {
+        decimals = 6;
+      } else if (stakingToken === 'TCX-8d448d') {
+        decimals = 8; // TCX has 8 decimals
+      } else if (stakingToken === 'TCXWEGLD-f1f2b1') {
+        decimals = 18; // TCXWEGLD LP token has 18 decimals
+      } else if (stakingToken.includes('USDC') || stakingToken.includes('USDT')) {
+        decimals = 6; // USDC/USDT typically have 6 decimals
+      }
+    }
+    
     return formatBalance(userFarm.stakedBalance, decimals);
   };
 
@@ -755,7 +769,7 @@ const StakingRoomsPage = () => {
             modalType={modalType}
             farmId={selectedFarm.farm.id}
             stakingToken={selectedFarm.stakingToken}
-            userStakedBalance={getUserStakedBalance(selectedFarm.farm.id)}
+            userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
             onSuccess={handleModalSuccess}
           />
         )}
