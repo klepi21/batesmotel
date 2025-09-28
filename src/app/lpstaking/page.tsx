@@ -76,8 +76,8 @@ const LpStakingPage = () => {
   const formatBalance = (balance: string, decimals: number = 18) => {
     const num = parseFloat(balance) / Math.pow(10, decimals);
     return num.toLocaleString('en-US', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 6 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 18 
     });
   };
 

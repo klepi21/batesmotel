@@ -98,7 +98,7 @@ const JorkinRoomPage = () => {
 
   function formatBalance(balance: string, decimals: number = 18) {
     const num = parseFloat(balance) / Math.pow(10, decimals);
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+    return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 18 });
   }
 
   function getUserStakedBalance(farmId: string, stakingToken?: string) {

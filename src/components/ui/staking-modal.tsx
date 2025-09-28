@@ -158,7 +158,11 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const formatBalance = (balance: string, decimals: number = 18): string => {
     try {
       const num = parseFloat(balance) / Math.pow(10, decimals);
-      return num.toFixed(18);
+      // Show full precision up to 18 decimal places
+      return num.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 18 
+      });
     } catch {
       return '0';
     }
@@ -183,7 +187,10 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     if (farmId === '117' && modalType === 'stake') {
       const num = parseFloat(balance) / Math.pow(10, decimals);
       const adjustedNum = Math.max(0, num - 15); // Subtract 15, but don't go below 0
-      return adjustedNum.toFixed(18);
+      return adjustedNum.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 18 
+      });
     }
     return formatBalance(balance, decimals);
   };

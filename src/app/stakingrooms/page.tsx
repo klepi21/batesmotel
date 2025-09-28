@@ -75,13 +75,10 @@ const StakingRoomsPage = () => {
   const formatBalance = (balance: string, decimals: number = 18): string => {
     try {
       const num = parseFloat(balance) / Math.pow(10, decimals);
-      if (num >= 1000000) {
-        return (num / 1000000).toFixed(2) + 'M';
-      } else if (num >= 1000) {
-        return (num / 1000).toFixed(2) + 'K';
-      } else {
-        return num.toFixed(2);
-      }
+      return num.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 18 
+      });
     } catch {
       return '0';
     }

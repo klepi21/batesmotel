@@ -45,6 +45,7 @@ const BuildersRoomPage = () => {
       if (isLoggedIn && address) {
         try {
           const userFarmsData = await smartContractService.getUserFarmInfo(address);
+          console.log('🔍 All user farms data:', userFarmsData);
           setUserFarms(userFarmsData);
 
           const userRewardsData = await smartContractService.getUserRewardsInfo(address);
@@ -73,8 +74,8 @@ const BuildersRoomPage = () => {
   const formatBalance = (balance: string, decimals: number = 18) => {
     const num = parseFloat(balance) / Math.pow(10, decimals);
     return num.toLocaleString('en-US', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 6 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 18 
     });
   };
 
@@ -133,6 +134,15 @@ const BuildersRoomPage = () => {
       } else if (stakingToken.includes('USDC') || stakingToken.includes('USDT')) {
         decimals = 6; // USDC/USDT typically have 6 decimals
       }
+    }
+    
+    // Debug logging for farm 128
+    if (farmId === '128') {
+      console.log(`🔍 Farm 128 Debug:`);
+      console.log(`- Raw stakedBalance: ${userFarm.stakedBalance}`);
+      console.log(`- StakingToken: ${stakingToken}`);
+      console.log(`- Using decimals: ${decimals}`);
+      console.log(`- Formatted balance: ${formatBalance(userFarm.stakedBalance, decimals)}`);
     }
     
     return formatBalance(userFarm.stakedBalance, decimals);
