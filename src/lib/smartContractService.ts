@@ -940,7 +940,7 @@ export class SmartContractService {
     // Create ESDT transfer data
     const tokenIdentifierHex = Buffer.from(stakingToken).toString('hex');
     const amountHex = tokenAmount.toString(16).padStart(64, '0');
-    const functionName = Buffer.from('stake').toString('hex');
+    const functionName = 'stake'; // Use actual function name, not hex encoded
     const farmIdHex = BigInt(farmId).toString(16).padStart(64, '0');
     
     const data = `ESDTTransfer@${tokenIdentifierHex}@${amountHex}@${functionName}@${farmIdHex}`;
@@ -960,7 +960,7 @@ export class SmartContractService {
     // Convert amount to BigInt (18 decimals for most tokens)
     const tokenAmount = BigInt(parseFloat(amount) * Math.pow(10, 18));
     
-    const functionName = Buffer.from('unstake').toString('hex');
+    const functionName = 'unstake'; // Use actual function name, not hex encoded
     const farmIdHex = BigInt(farmId).toString(16).padStart(64, '0');
     const amountHex = tokenAmount.toString(16).padStart(64, '0');
     
