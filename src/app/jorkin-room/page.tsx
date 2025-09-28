@@ -101,9 +101,13 @@ const JorkinRoomPage = () => {
     return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
   }
 
-  function getUserStakedBalance(farmId: string) {
+  function getUserStakedBalance(farmId: string, stakingToken?: string) {
     const userFarm = userFarms.find(uf => uf.farmId === farmId);
-    return userFarm ? formatBalance(userFarm.stakedBalance) : '0';
+    if (!userFarm) return '0';
+    
+    // Use correct decimals for the staking token
+    const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+    return formatBalance(userFarm.stakedBalance, decimals);
   }
 
   function getUserHarvestableRewards(farmId: string) {
@@ -205,7 +209,7 @@ const JorkinRoomPage = () => {
   function handleUnstakeClick(farm: FarmInfo) {
     if (!isLoggedIn) { toast.error('Please connect your wallet first'); return; }
     if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
-    const stakedBalance = getUserStakedBalance(farm.farm.id);
+    const stakedBalance = getUserStakedBalance(farm.farm.id, farm.stakingToken);
     if (parseFloat(stakedBalance) <= 0) { toast.error('No tokens staked in this farm'); return; }
     setSelectedFarm(farm); setModalType('unstake'); setModalOpen(true);
   }
@@ -634,7 +638,7 @@ const JorkinRoomPage = () => {
                     </div>
                     <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
-                      <span className="text-white font-mono tracking-wide">{formatBalance(getUserStakedBalance(farm116.farm.id))}</span>
+                      <span className="text-white font-mono tracking-wide">{getUserStakedBalance(farm116.farm.id, farm116.stakingToken)}</span>
                     </div>
                     <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
@@ -689,10 +693,10 @@ const JorkinRoomPage = () => {
                     </button>
                     <button
                       onClick={() => handleUnstakeClick(farm116)}
-                      disabled={parseFloat(getUserStakedBalance(farm116.farm.id)) <= 0 || !hasEnoughRare}
-                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${parseFloat(getUserStakedBalance(farm116.farm.id)) <= 0 || !hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white border-red-500'}`}
+                      disabled={parseFloat(getUserStakedBalance(farm116.farm.id, farm116.stakingToken)) <= 0 || !hasEnoughRare}
+                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${parseFloat(getUserStakedBalance(farm116.farm.id, farm116.stakingToken)) <= 0 || !hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white border-red-500'}`}
                       style={{ imageRendering: 'pixelated' }}
-                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm116.farm.id)) <= 0 ? 'No tokens staked' : ''}
+                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm116.farm.id, farm116.stakingToken)) <= 0 ? 'No tokens staked' : ''}
                     >
                       UNSTAKE
                     </button>

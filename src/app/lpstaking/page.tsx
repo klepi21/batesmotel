@@ -118,9 +118,13 @@ const LpStakingPage = () => {
   };
 
   // Helper function to get user's staked balance for a farm
-  const getUserStakedBalance = (farmId: string) => {
+  const getUserStakedBalance = (farmId: string, stakingToken?: string) => {
     const userFarm = userFarms.find(uf => uf.farmId === farmId);
-    return userFarm ? formatBalance(userFarm.stakedBalance) : '0';
+    if (!userFarm) return '0';
+    
+    // Use correct decimals for the staking token
+    const decimals = stakingToken === 'LOKD-ff8f08' ? 6 : 18;
+    return formatBalance(userFarm.stakedBalance, decimals);
   };
 
   // Helper function to get user's harvestable rewards for a farm
@@ -649,7 +653,7 @@ const LpStakingPage = () => {
                           <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
                             <span className="text-white font-mono tracking-wide">
-                              {formatBalance(getUserStakedBalance(farm.farm.id))}
+                              {getUserStakedBalance(farm.farm.id, farm.stakingToken)}
                             </span>
                           </div>
                           <div className="flex justify-between text-xs sm:text-sm">
@@ -709,14 +713,14 @@ const LpStakingPage = () => {
                           {/* Unstake Button - Disabled if no tokens staked */}
                           <button
                             onClick={() => handleUnstakeClick(farm)}
-                            disabled={parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 || !hasEnoughRare}
+                            disabled={parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 || !hasEnoughRare}
                             className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 || !hasEnoughRare
+                              parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 text-white border-red-500'
                             }`}
                             style={{ imageRendering: 'pixelated' }}
-                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm.farm.id)) <= 0 ? 'No tokens staked' : ''}
+                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 ? 'No tokens staked' : ''}
                           >
                             UNSTAKE
                           </button>
