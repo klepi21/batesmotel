@@ -145,9 +145,11 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       } else {
         // Check if user has enough staked balance
         const decimals = getTokenDecimals(stakingToken);
-        const stakedBalanceNum = userStakedBalance.includes('.')
-          ? parseFloat(userStakedBalance)
-          : parseFloat(userStakedBalance) / Math.pow(10, decimals);
+        const hasComma = (userStakedBalance || '').includes(',');
+        const cleanBalance = (userStakedBalance || '0').replace(/,/g, '');
+        const stakedBalanceNum = (hasComma || cleanBalance.includes('.'))
+          ? parseFloat(cleanBalance)
+          : parseFloat(cleanBalance) / Math.pow(10, decimals);
         if (parseFloat(amount) > stakedBalanceNum) {
           toast.error('Insufficient staked balance');
           return;
@@ -203,13 +205,15 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   // If balance already looks human (contains '.'), normalize it; otherwise convert from raw
   const ensureHumanAmount = (balance: string, decimals: number): string => {
     if (!balance) return '0';
-    if (balance.includes('.')) {
-      const [w, f = ''] = balance.split('.');
+    const hasComma = balance.includes(',');
+    const sanitized = balance.replace(/,/g, '');
+    if (hasComma || sanitized.includes('.')) {
+      const [w, f = ''] = sanitized.split('.');
       const whole = (w || '0').replace(/^0+(?=\d)/, '');
       const frac = f.replace(/0+$/, '');
       return frac.length ? `${whole || '0'}.${frac}` : (whole || '0');
     }
-    return toHumanAmount(balance, decimals);
+    return toHumanAmount(sanitized, decimals);
   };
 
   // Subtract an integer token amount (e.g., 15 RARE) from a raw integer balance using BigInt
@@ -233,6 +237,13 @@ export const StakingModal: React.FC<StakingModalProps> = ({
 
   // Helper function to get correct decimals for a staking token
   const getTokenDecimals = (token: string): number => {
+    // Ask service first (authoritative if available)
+    try {
+      const svcDecimals = (smartContractService as any)?.getTokenDecimals?.(token);
+      if (typeof svcDecimals === 'number' && svcDecimals >= 0) {
+        return svcDecimals;
+      }
+    } catch {}
     if (token === 'LOKD-ff8f08') {
       return 6;
     } else if (token === 'TCX-8d448d') {
