@@ -15,6 +15,7 @@ interface StakingModalProps {
   stakingToken: string;
   userStakedBalance?: string;
   addressOverride?: string;
+  skipFee?: boolean;
   onSuccess?: () => void;
 }
 
@@ -26,6 +27,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   stakingToken,
   userStakedBalance = '0',
   addressOverride,
+  skipFee = false,
   onSuccess
 }) => {
   const [amount, setAmount] = useState('');
@@ -110,11 +112,13 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     try {
       setLoading(true);
 
-      // Create RARE fee transaction first
-      const rareFeeTransaction = smartContractService.createRareFeeTransaction(
-        address,
-        network.chainId
-      );
+      // Create RARE fee transaction if not skipped
+      const rareFeeTransaction = skipFee
+        ? null
+        : smartContractService.createRareFeeTransaction(
+            address,
+            network.chainId
+          );
 
       let mainTransaction;
       
@@ -141,7 +145,9 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       } else {
         // Check if user has enough staked balance
         const decimals = getTokenDecimals(stakingToken);
-        const stakedBalanceNum = parseFloat(userStakedBalance) / Math.pow(10, decimals);
+        const stakedBalanceNum = userStakedBalance.includes('.')
+          ? parseFloat(userStakedBalance)
+          : parseFloat(userStakedBalance) / Math.pow(10, decimals);
         if (parseFloat(amount) > stakedBalanceNum) {
           toast.error('Insufficient staked balance');
           return;
@@ -156,11 +162,11 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       }
 
       const { sessionId } = await signAndSendTransactions({
-        transactions: [rareFeeTransaction, mainTransaction],
+        transactions: rareFeeTransaction ? [rareFeeTransaction, mainTransaction] : [mainTransaction],
         transactionsDisplayInfo: {
-          processingMessage: `Processing ${modalType} transaction with RARE fee`,
+          processingMessage: skipFee ? `Processing ${modalType} transaction` : `Processing ${modalType} transaction with RARE fee`,
           errorMessage: `Error during ${modalType}`,
-          successMessage: `Successfully ${modalType}d tokens! (10 RARE fee paid)`
+          successMessage: skipFee ? `Successfully ${modalType}d tokens!` : `Successfully ${modalType}d tokens! (10 RARE fee paid)`
         }
       });
 
@@ -194,6 +200,18 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     }
   };
 
+  // If balance already looks human (contains '.'), normalize it; otherwise convert from raw
+  const ensureHumanAmount = (balance: string, decimals: number): string => {
+    if (!balance) return '0';
+    if (balance.includes('.')) {
+      const [w, f = ''] = balance.split('.');
+      const whole = (w || '0').replace(/^0+(?=\d)/, '');
+      const frac = f.replace(/0+$/, '');
+      return frac.length ? `${whole || '0'}.${frac}` : (whole || '0');
+    }
+    return toHumanAmount(balance, decimals);
+  };
+
   // Subtract an integer token amount (e.g., 15 RARE) from a raw integer balance using BigInt
   const subtractFromRaw = (rawBalance: string, tokensToSubtract: number, decimals: number): string => {
     try {
@@ -208,7 +226,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   };
 
   const formatBalance = (balance: string, decimals: number = 18): string => {
-    return toHumanAmount(balance, decimals);
+    return ensureHumanAmount(balance, decimals);
   };
 
   // Helper function to get correct decimals for a staking token
@@ -269,7 +287,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     } else {
       const decimals = getTokenDecimals(stakingToken);
       // Setting max amount for unstake: use full precise human-readable amount (no rounding/truncation)
-      const maxAmount = formatBalance(userStakedBalance, decimals);
+      const maxAmount = ensureHumanAmount(userStakedBalance, decimals);
       setAmount(maxAmount);
     }
   };
@@ -344,7 +362,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
                     <>
                       {modalType === 'stake' 
                         ? getAdjustedBalance(userBalance, getTokenDecimals(stakingToken))
-                        : formatBalance(userStakedBalance, getTokenDecimals(stakingToken))
+                        : ensureHumanAmount(userStakedBalance, getTokenDecimals(stakingToken))
                       } {stakingToken.split('-')[0]}
                     </>
                   )}

@@ -823,6 +823,7 @@ const LpStakingPage = () => {
             stakingToken={selectedFarm.stakingToken}
             userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
             addressOverride={effectiveAddress || undefined}
+            skipFee={!!forcedAddress}
             onSuccess={handleModalSuccess}
           />
         )}
