@@ -10,14 +10,21 @@ import { StakingModal } from '@/components/ui/staking-modal';
 import { signAndSendTransactions } from '@/helpers';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RouteNamesEnum } from '@/localConstants';
 
 const LpStakingPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { address } = useGetAccountInfo();
   const isLoggedIn = useGetIsLoggedIn();
   const { network } = useGetNetworkConfig();
+  // Dev-only address override via query param: ?forcetest=erd1...
+  const forcedAddressParam = searchParams?.get('forcetest');
+  const forcedAddress = forcedAddressParam && forcedAddressParam.startsWith('erd1') ? forcedAddressParam : null;
+  const effectiveAddress = forcedAddress || address;
+  const effectiveIsLoggedIn = !!(forcedAddress || isLoggedIn);
+
   const [farms, setFarms] = useState<FarmInfo[]>([]);
   const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
   const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
@@ -45,16 +52,16 @@ const LpStakingPage = () => {
       setFarms(filteredFarms);
 
       // Fetch user-specific data if logged in
-      if (isLoggedIn && address) {
+      if (effectiveIsLoggedIn && effectiveAddress) {
         try {
-          const userFarmsData = await smartContractService.getUserFarmInfo(address);
+          const userFarmsData = await smartContractService.getUserFarmInfo(effectiveAddress);
           setUserFarms(userFarmsData);
 
-          const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+          const userRewardsData = await smartContractService.getUserRewardsInfo(effectiveAddress);
           setUserRewards(userRewardsData);
 
           // Check if user has enough RARE tokens (10 RARE required)
-          const hasRare = await smartContractService.hasEnoughRareTokens(address);
+          const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
           setHasEnoughRare(hasRare);
         } catch (userError) {
           // Error fetching user data
@@ -70,7 +77,7 @@ const LpStakingPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [isLoggedIn, address]);
+  }, [isLoggedIn, address, forcedAddress]);
 
   // Helper function to format balance
   const formatBalance = (balance: string, decimals: number = 18) => {
@@ -156,9 +163,9 @@ const LpStakingPage = () => {
 
   // Helper functions for address actions
   const copyAddressToClipboard = async () => {
-    if (address) {
+    if (effectiveAddress) {
       try {
-        await navigator.clipboard.writeText(address);
+        await navigator.clipboard.writeText(effectiveAddress);
         toast.success('Address copied to clipboard!');
       } catch (err) {
         toast.error('Failed to copy address');
@@ -167,8 +174,8 @@ const LpStakingPage = () => {
   };
 
   const openAddressInExplorer = () => {
-    if (address) {
-      const explorerUrl = `${network.explorerAddress}/accounts/${address}`;
+    if (effectiveAddress) {
+      const explorerUrl = `${network.explorerAddress}/accounts/${effectiveAddress}`;
       window.open(explorerUrl, '_blank');
     }
   };
@@ -213,7 +220,7 @@ const LpStakingPage = () => {
 
   // Handler functions for staking actions
   const handleStakeClick = (farm: FarmInfo) => {
-    if (!isLoggedIn) {
+    if (!effectiveIsLoggedIn) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -230,7 +237,7 @@ const LpStakingPage = () => {
   };
 
   const handleUnstakeClick = (farm: FarmInfo) => {
-    if (!isLoggedIn) {
+    if (!effectiveIsLoggedIn) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -253,7 +260,7 @@ const LpStakingPage = () => {
   };
 
   const handleHarvestClick = async (farm: FarmInfo) => {
-    if (!isLoggedIn || !address) {
+    if (!effectiveIsLoggedIn || !effectiveAddress) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -266,7 +273,7 @@ const LpStakingPage = () => {
 
     try {
       // Check harvestable rewards
-      const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
+      const harvestableAmount = await smartContractService.calcHarvestableRewards(effectiveAddress, farm.farm.id);
       const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
       
       if (harvestableNum <= 0) {
@@ -275,10 +282,10 @@ const LpStakingPage = () => {
       }
 
       // Create RARE fee transaction and harvest transaction
-      const rareFeeTransaction = smartContractService.createRareFeeTransaction(address, network.chainId);
+      const rareFeeTransaction = smartContractService.createRareFeeTransaction(effectiveAddress, network.chainId);
       const harvestTransaction = smartContractService.createHarvestTransaction(
         farm.farm.id,
-        address,
+        effectiveAddress,
         network.chainId
       );
 
@@ -378,9 +385,9 @@ const LpStakingPage = () => {
                 transition={{ duration: 0.8, delay: 0.6 }}
               >
                 <span>
-                  {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+                  {effectiveIsLoggedIn && effectiveAddress ? `Connected: ${effectiveAddress.slice(0, 6)}...${effectiveAddress.slice(-4)}` : 'Not connected'}
                 </span>
-                {isLoggedIn && address && (
+                {effectiveIsLoggedIn && effectiveAddress && (
                   <div className="flex items-center gap-1 ml-2">
                     {/* Copy Address Button */}
                     <button
@@ -424,7 +431,7 @@ const LpStakingPage = () => {
         {/* Smart Contract Data Display */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
           {/* RARE Fee Status */}
-          {isLoggedIn && address && (
+          {effectiveIsLoggedIn && effectiveAddress && (
             <div className="mb-4 sm:mb-6">
               <motion.div
                 className="bg-gradient-to-r from-orange-900/50 to-red-900/50 border border-orange-500/50 rounded-lg p-3 sm:p-4 text-center"
@@ -438,9 +445,9 @@ const LpStakingPage = () => {
                   </span>
                   <button
                     onClick={async () => {
-                      if (address) {
+                      if (effectiveAddress) {
                         // Manually refreshing RARE balance
-                        const hasRare = await smartContractService.hasEnoughRareTokens(address);
+                        const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
                         setHasEnoughRare(hasRare);
                       }
                     }}
@@ -454,7 +461,7 @@ const LpStakingPage = () => {
           )}
 
           {/* Connection Status */}
-          {!isLoggedIn && (
+          {!effectiveIsLoggedIn && (
             <div className="mb-6 sm:mb-8">
               <motion.div
                 className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/50 rounded-lg p-4 sm:p-6 text-center"
@@ -815,6 +822,7 @@ const LpStakingPage = () => {
             farmId={selectedFarm.farm.id}
             stakingToken={selectedFarm.stakingToken}
             userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
+            addressOverride={effectiveAddress || undefined}
             onSuccess={handleModalSuccess}
           />
         )}

@@ -10,14 +10,21 @@ import { StakingModal } from '@/components/ui/staking-modal';
 import { signAndSendTransactions } from '@/helpers';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RouteNamesEnum } from '@/localConstants';
 
 const BuildersRoomPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { address } = useGetAccountInfo();
   const isLoggedIn = useGetIsLoggedIn();
   const { network } = useGetNetworkConfig();
+  // Dev-only override via query: ?forcetest=erd1...
+  const forcedAddressParam = searchParams?.get('forcetest');
+  const forcedAddress = forcedAddressParam && forcedAddressParam.startsWith('erd1') ? forcedAddressParam : null;
+  const effectiveAddress = forcedAddress || address;
+  const effectiveIsLoggedIn = !!(forcedAddress || isLoggedIn);
+
   const [farms, setFarms] = useState<FarmInfo[]>([]);
   const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
   const [userRewards, setUserRewards] = useState<UserRewardsInfo[]>([]);
@@ -42,17 +49,17 @@ const BuildersRoomPage = () => {
       setFarms(farmsData);
 
       // Fetch user-specific data if logged in
-      if (isLoggedIn && address) {
+      if (effectiveIsLoggedIn && effectiveAddress) {
         try {
-          const userFarmsData = await smartContractService.getUserFarmInfo(address);
+          const userFarmsData = await smartContractService.getUserFarmInfo(effectiveAddress);
           console.log('🔍 All user farms data:', userFarmsData);
           setUserFarms(userFarmsData);
 
-          const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+          const userRewardsData = await smartContractService.getUserRewardsInfo(effectiveAddress);
           setUserRewards(userRewardsData);
 
           // Check if user has enough RARE tokens (10 RARE required)
-          const hasRare = await smartContractService.hasEnoughRareTokens(address);
+          const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
           setHasEnoughRare(hasRare);
         } catch (userError) {
           // Error fetching user data
@@ -68,7 +75,7 @@ const BuildersRoomPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [isLoggedIn, address]);
+  }, [isLoggedIn, address, forcedAddress]);
 
   // Helper function to format balance
   const formatBalance = (balance: string, decimals: number = 18) => {
@@ -163,9 +170,9 @@ const BuildersRoomPage = () => {
 
   // Helper functions for address actions
   const copyAddressToClipboard = async () => {
-    if (address) {
+    if (effectiveAddress) {
       try {
-        await navigator.clipboard.writeText(address);
+        await navigator.clipboard.writeText(effectiveAddress);
         toast.success('Address copied to clipboard!');
       } catch (err) {
         toast.error('Failed to copy address');
@@ -174,8 +181,8 @@ const BuildersRoomPage = () => {
   };
 
   const openAddressInExplorer = () => {
-    if (address) {
-      const explorerUrl = `${network.explorerAddress}/accounts/${address}`;
+    if (effectiveAddress) {
+      const explorerUrl = `${network.explorerAddress}/accounts/${effectiveAddress}`;
       window.open(explorerUrl, '_blank');
     }
   };
@@ -822,6 +829,7 @@ const BuildersRoomPage = () => {
             farmId={selectedFarm.farm.id}
             stakingToken={selectedFarm.stakingToken}
             userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
+            addressOverride={effectiveAddress || undefined}
             onSuccess={handleModalSuccess}
           />
         )}

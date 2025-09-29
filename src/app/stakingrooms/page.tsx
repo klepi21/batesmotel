@@ -10,14 +10,21 @@ import { StakingModal } from '@/components/ui/staking-modal';
 import { signAndSendTransactions } from '@/helpers';
 import { toast } from 'sonner';
 import { Toaster } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RouteNamesEnum } from '@/localConstants';
 
 const StakingRoomsPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isLoggedIn = useGetIsLoggedIn();
   const { address } = useGetAccountInfo();
   const { network } = useGetNetworkConfig();
+  // Dev-only override via query: ?forcetest=erd1...
+  const forcedAddressParam = searchParams?.get('forcetest');
+  const forcedAddress = forcedAddressParam && forcedAddressParam.startsWith('erd1') ? forcedAddressParam : null;
+  const effectiveAddress = forcedAddress || address;
+  const effectiveIsLoggedIn = !!(forcedAddress || isLoggedIn);
+
   const [farms, setFarms] = useState<FarmInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,16 +52,16 @@ const StakingRoomsPage = () => {
         setFarms(filteredFarms);
 
         // Fetch user-specific data if logged in
-        if (isLoggedIn && address) {
+        if (effectiveIsLoggedIn && effectiveAddress) {
           try {
-            const userFarmsData = await smartContractService.getUserFarmInfo(address);
+            const userFarmsData = await smartContractService.getUserFarmInfo(effectiveAddress);
             setUserFarms(userFarmsData);
 
-            const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+            const userRewardsData = await smartContractService.getUserRewardsInfo(effectiveAddress);
             setUserRewards(userRewardsData);
 
             // Check if user has enough RARE tokens (10 RARE required)
-            const hasRare = await smartContractService.hasEnoughRareTokens(address);
+            const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
             setHasEnoughRare(hasRare);
           } catch (userError) {
             // Error fetching user data
@@ -69,7 +76,7 @@ const StakingRoomsPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [isLoggedIn, address]);
+  }, [isLoggedIn, address, forcedAddress]);
 
   // Helper function to format balance
   const formatBalance = (balance: string, decimals: number = 18): string => {
@@ -102,9 +109,9 @@ const StakingRoomsPage = () => {
 
   // Helper functions for address actions
   const copyAddressToClipboard = async () => {
-    if (address) {
+    if (effectiveAddress) {
       try {
-        await navigator.clipboard.writeText(address);
+        await navigator.clipboard.writeText(effectiveAddress);
         toast.success('Address copied to clipboard!');
       } catch (err) {
         toast.error('Failed to copy address');
@@ -113,8 +120,8 @@ const StakingRoomsPage = () => {
   };
 
   const openAddressInExplorer = () => {
-    if (address) {
-      const explorerUrl = `${network.explorerAddress}/accounts/${address}`;
+    if (effectiveAddress) {
+      const explorerUrl = `${network.explorerAddress}/accounts/${effectiveAddress}`;
       window.open(explorerUrl, '_blank');
     }
   };
@@ -364,9 +371,9 @@ const StakingRoomsPage = () => {
                 transition={{ duration: 0.8, delay: 0.6 }}
               >
                 <span>
-                  {isLoggedIn && address ? `Connected: ${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+                  {effectiveIsLoggedIn && effectiveAddress ? `Connected: ${effectiveAddress.slice(0, 6)}...${effectiveAddress.slice(-4)}` : 'Not connected'}
                 </span>
-                {isLoggedIn && address && (
+                {effectiveIsLoggedIn && effectiveAddress && (
                   <div className="flex items-center gap-1 ml-2">
                     {/* Copy Address Button */}
                     <button
@@ -403,7 +410,7 @@ const StakingRoomsPage = () => {
                   </div>
                 )}
               </motion.div>
-              {isLoggedIn && (
+              {effectiveIsLoggedIn && (
                 <motion.div
                   className="text-xs text-gray-500 mt-1 font-mono tracking-wide flex items-center justify-center space-x-2"
                   initial={{ opacity: 0 }}
@@ -413,9 +420,8 @@ const StakingRoomsPage = () => {
                   <span>RARE Fee Status: {hasEnoughRare ? '✅ Ready (≥10 RARE)' : '❌ Insufficient (<10 RARE)'}</span>
                   <button
                     onClick={async () => {
-                      if (address) {
-                        // Manually refreshing RARE balance
-                        const hasRare = await smartContractService.hasEnoughRareTokens(address);
+                      if (effectiveAddress) {
+                        const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
                         setHasEnoughRare(hasRare);
                       }
                     }}
@@ -767,6 +773,7 @@ const StakingRoomsPage = () => {
             farmId={selectedFarm.farm.id}
             stakingToken={selectedFarm.stakingToken}
             userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
+            addressOverride={effectiveAddress || undefined}
             onSuccess={handleModalSuccess}
           />
         )}

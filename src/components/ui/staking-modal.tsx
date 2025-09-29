@@ -14,6 +14,7 @@ interface StakingModalProps {
   farmId: string;
   stakingToken: string;
   userStakedBalance?: string;
+  addressOverride?: string;
   onSuccess?: () => void;
 }
 
@@ -24,6 +25,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   farmId,
   stakingToken,
   userStakedBalance = '0',
+  addressOverride,
   onSuccess
 }) => {
   const [amount, setAmount] = useState('');
@@ -32,26 +34,46 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   const [userBalance, setUserBalance] = useState('0');
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
+  const walletAddress = addressOverride || address;
 
   // Fetch user's token balance when modal opens (for stake)
   useEffect(() => {
     const fetchUserBalance = async () => {
-      if (isOpen && modalType === 'stake' && address && stakingToken) {
+      if (isOpen && modalType === 'stake' && walletAddress && stakingToken) {
         try {
           setBalanceLoading(true);
-          // Fetching balance for token
-          
-          // Fetch user's token balance from MultiversX API
-          const response = await fetch(`${network.apiAddress}/accounts/${address}/tokens/${stakingToken}`);
-          
+          // Primary attempt: direct identifier fetch
+          const directUrl = `${network.apiAddress}/accounts/${walletAddress}/tokens/${stakingToken}`;
+          let response = await fetch(directUrl);
+
           if (response.ok) {
             const tokenData = await response.json();
-            const balance = tokenData.balance || '0';
-            // Fetched token balance
-            setUserBalance(balance);
+            setUserBalance(tokenData.balance || '0');
           } else {
-            // Token not found or no balance, setting to 0
-            setUserBalance('0');
+            // Fallback: fetch all tokens and try to match by identifier variations (LP names/tickers)
+            const listUrl = `${network.apiAddress}/accounts/${walletAddress}/tokens?size=2000`;
+            const listRes = await fetch(listUrl);
+            if (listRes.ok) {
+              const tokens = await listRes.json();
+              const baseTicker = stakingToken.split('-')[0];
+              // Try exact identifier match first
+              let found = tokens.find((t: any) => t.identifier === stakingToken);
+              // Try begins-with base ticker (covers cases where wallet holds a different suffix)
+              if (!found) {
+                found = tokens.find((t: any) => typeof t.identifier === 'string' && t.identifier.startsWith(baseTicker));
+              }
+              // Try matching by name for LPs (e.g., HYPEUSDCLP)
+              if (!found) {
+                const lpNameGuess = baseTicker.endsWith('LP') ? baseTicker : `${baseTicker}LP`;
+                found = tokens.find((t: any) => (
+                  (typeof t.identifier === 'string' && (t.identifier.startsWith(lpNameGuess) || t.identifier.includes(baseTicker))) ||
+                  (typeof t.name === 'string' && (t.name.startsWith(lpNameGuess) || t.name.includes(baseTicker)))
+                ));
+              }
+              setUserBalance(found?.balance || '0');
+            } else {
+              setUserBalance('0');
+            }
           }
         } catch (error) {
           // Error fetching user balance
@@ -63,7 +85,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     };
 
     fetchUserBalance();
-  }, [isOpen, modalType, address, stakingToken, network.apiAddress]);
+  }, [isOpen, modalType, walletAddress, stakingToken, network.apiAddress]);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -80,7 +102,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       return;
     }
 
-    if (!address) {
+    if (!walletAddress) {
       toast.error('Wallet not connected');
       return;
     }
@@ -113,7 +135,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
           farmId,
           amount,
           stakingToken,
-          address,
+          walletAddress,
           network.chainId
         );
       } else {
@@ -128,7 +150,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
         mainTransaction = smartContractService.createUnstakeTransaction(
           farmId,
           amount,
-          address,
+          walletAddress,
           network.chainId
         );
       }
@@ -155,17 +177,38 @@ export const StakingModal: React.FC<StakingModalProps> = ({
     }
   };
 
-  const formatBalance = (balance: string, decimals: number = 18): string => {
+  // Convert raw integer balance string to a human-readable decimal string without rounding
+  const toHumanAmount = (rawBalance: string, decimals: number = 18): string => {
     try {
-      const num = parseFloat(balance) / Math.pow(10, decimals);
-      // Show full precision up to 18 decimal places
-      return num.toLocaleString('en-US', { 
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 18 
-      });
+      if (!rawBalance) return '0';
+      const negative = rawBalance.startsWith('-');
+      const digits = negative ? rawBalance.slice(1) : rawBalance;
+      const padded = digits.padStart(decimals + 1, '0');
+      const whole = padded.slice(0, padded.length - decimals);
+      const frac = padded.slice(padded.length - decimals);
+      const trimmedFrac = frac.replace(/0+$/, '');
+      const result = trimmedFrac.length > 0 ? `${whole}.${trimmedFrac}` : whole;
+      return negative ? `-${result}` : result;
     } catch {
       return '0';
     }
+  };
+
+  // Subtract an integer token amount (e.g., 15 RARE) from a raw integer balance using BigInt
+  const subtractFromRaw = (rawBalance: string, tokensToSubtract: number, decimals: number): string => {
+    try {
+      const base = BigInt(10) ** BigInt(decimals);
+      const delta = BigInt(Math.trunc(tokensToSubtract)) * base;
+      const current = BigInt(rawBalance || '0');
+      const result = current > delta ? current - delta : BigInt(0);
+      return result.toString();
+    } catch {
+      return '0';
+    }
+  };
+
+  const formatBalance = (balance: string, decimals: number = 18): string => {
+    return toHumanAmount(balance, decimals);
   };
 
   // Helper function to get correct decimals for a staking token
@@ -176,7 +219,8 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       return 8; // TCX has 8 decimals
     } else if (token === 'TCXWEGLD-f1f2b1') {
       return 18; // TCXWEGLD LP token has 18 decimals
-    } else if (token.includes('USDC') || token.includes('USDT')) {
+    } else if (token.startsWith('USDC-') || token.startsWith('USDT-')) {
+      // Restrict to native USDC/USDT tokens only; LP identifiers like HYPEUSDC-xxxxx are NOT 6-decimal tokens
       return 6; // USDC/USDT typically have 6 decimals
     }
     return 18; // Default to 18 decimals
@@ -185,12 +229,9 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   // Special handling for farm 117 - adjust balance display and max amount
   const getAdjustedBalance = (balance: string, decimals: number = 18): string => {
     if (farmId === '117' && modalType === 'stake') {
-      const num = parseFloat(balance) / Math.pow(10, decimals);
-      const adjustedNum = Math.max(0, num - 15); // Subtract 15, but don't go below 0
-      return adjustedNum.toLocaleString('en-US', { 
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 18 
-      });
+      // Perform precise subtraction on raw balance to avoid float precision loss
+      const adjustedRaw = subtractFromRaw(balance, 15, decimals);
+      return toHumanAmount(adjustedRaw, decimals);
     }
     return formatBalance(balance, decimals);
   };
@@ -211,21 +252,24 @@ export const StakingModal: React.FC<StakingModalProps> = ({
       if (isLPToken) {
         // For LP tokens, use 98% of the balance (2% less)
         const balanceNum = parseFloat(adjustedBalance);
-        const reducedBalance = balanceNum * 0.98; // 98% of balance
-        maxAmount = Math.floor(reducedBalance).toString();
+        if (balanceNum < 1) {
+          // For tiny balances, take full precise amount (do not floor to zero)
+          maxAmount = adjustedBalance;
+        } else {
+          const reducedBalance = balanceNum * 0.98; // 98% of balance
+          maxAmount = Math.floor(reducedBalance).toString();
+        }
       } else {
         // For regular tokens, remove decimals and don't round up - just truncate
-        maxAmount = Math.floor(parseFloat(adjustedBalance)).toString();
+        const bal = parseFloat(adjustedBalance);
+        maxAmount = bal < 1 ? adjustedBalance : Math.floor(bal).toString();
       }
       
       setAmount(maxAmount);
     } else {
       const decimals = getTokenDecimals(stakingToken);
-      // Setting max amount for unstake
-      
-      const formattedBalance = formatBalance(userStakedBalance, decimals);
-      // Remove decimals and don't round up - just truncate
-      const maxAmount = Math.floor(parseFloat(formattedBalance)).toString();
+      // Setting max amount for unstake: use full precise human-readable amount (no rounding/truncation)
+      const maxAmount = formatBalance(userStakedBalance, decimals);
       setAmount(maxAmount);
     }
   };

@@ -10,14 +10,21 @@ import { smartContractService, FarmInfo, UserFarmInfo, UserRewardsInfo } from '@
 import { StakingModal } from '@/components/ui/staking-modal';
 import { signAndSendTransactions } from '@/helpers';
 import { toast, Toaster } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { RouteNamesEnum } from '@/localConstants';
 
 const JorkinRoomPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { address } = useGetAccountInfo();
   const isLoggedIn = useGetIsLoggedIn();
   const { network } = useGetNetworkConfig();
+  // Dev-only override via query: ?forcetest=erd1...
+  const forcedAddressParam = searchParams?.get('forcetest');
+  const forcedAddress = forcedAddressParam && forcedAddressParam.startsWith('erd1') ? forcedAddressParam : null;
+  const effectiveAddress = forcedAddress || address;
+  const effectiveIsLoggedIn = !!(forcedAddress || isLoggedIn);
+
 
   const [farm116, setFarm116] = useState<FarmInfo | null>(null);
   const [userFarms, setUserFarms] = useState<UserFarmInfo[]>([]);
@@ -69,17 +76,17 @@ const JorkinRoomPage = () => {
       
       setFarm116(only127);
 
-      if (isLoggedIn && address) {
+      if (effectiveIsLoggedIn && effectiveAddress) {
         try {
-          const userFarmsData = await smartContractService.getUserFarmInfo(address);
+          const userFarmsData = await smartContractService.getUserFarmInfo(effectiveAddress);
           setUserFarms(userFarmsData);
 
-          const userRewardsData = await smartContractService.getUserRewardsInfo(address);
+          const userRewardsData = await smartContractService.getUserRewardsInfo(effectiveAddress);
           
           
           setUserRewards(userRewardsData);
 
-          const hasRare = await smartContractService.hasEnoughRareTokens(address);
+          const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
           setHasEnoughRare(hasRare);
         } catch (userError) {
           // ignore user-specific errors here
@@ -94,7 +101,7 @@ const JorkinRoomPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [isLoggedIn, address]);
+  }, [isLoggedIn, address, forcedAddress]);
 
   function formatBalance(balance: string, decimals: number = 18) {
     const num = parseFloat(balance) / Math.pow(10, decimals);
@@ -193,9 +200,9 @@ const JorkinRoomPage = () => {
 
   // Helper functions for address actions
   const copyAddressToClipboard = async () => {
-    if (address) {
+    if (effectiveAddress) {
       try {
-        await navigator.clipboard.writeText(address);
+        await navigator.clipboard.writeText(effectiveAddress);
         toast.success('Address copied to clipboard!');
       } catch (err) {
         toast.error('Failed to copy address');
@@ -204,8 +211,8 @@ const JorkinRoomPage = () => {
   };
 
   const openAddressInExplorer = () => {
-    if (address) {
-      const explorerUrl = `${network.explorerAddress}/accounts/${address}`;
+    if (effectiveAddress) {
+      const explorerUrl = `${network.explorerAddress}/accounts/${effectiveAddress}`;
       window.open(explorerUrl, '_blank');
     }
   };
@@ -215,13 +222,13 @@ const JorkinRoomPage = () => {
   };
 
   function handleStakeClick(farm: FarmInfo) {
-    if (!isLoggedIn) { toast.error('Please connect your wallet first'); return; }
+    if (!effectiveIsLoggedIn) { toast.error('Please connect your wallet first'); return; }
     if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
     setSelectedFarm(farm); setModalType('stake'); setModalOpen(true);
   }
 
   function handleUnstakeClick(farm: FarmInfo) {
-    if (!isLoggedIn) { toast.error('Please connect your wallet first'); return; }
+    if (!effectiveIsLoggedIn) { toast.error('Please connect your wallet first'); return; }
     if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
     const stakedBalance = getUserStakedBalance(farm.farm.id, farm.stakingToken);
     if (parseFloat(stakedBalance) <= 0) { toast.error('No tokens staked in this farm'); return; }
@@ -229,14 +236,14 @@ const JorkinRoomPage = () => {
   }
 
   async function handleHarvestClick(farm: FarmInfo) {
-    if (!isLoggedIn || !address) { toast.error('Please connect your wallet first'); return; }
+    if (!effectiveIsLoggedIn || !effectiveAddress) { toast.error('Please connect your wallet first'); return; }
     if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
     try {
-      const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
+      const harvestableAmount = await smartContractService.calcHarvestableRewards(effectiveAddress, farm.farm.id);
       const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
       if (harvestableNum <= 0) { toast.error('No rewards available to harvest'); return; }
-      const rareFeeTransaction = smartContractService.createRareFeeTransaction(address, network.chainId);
-      const harvestTransaction = smartContractService.createHarvestTransaction(farm.farm.id, address, network.chainId);
+      const rareFeeTransaction = smartContractService.createRareFeeTransaction(effectiveAddress, network.chainId);
+      const harvestTransaction = smartContractService.createHarvestTransaction(farm.farm.id, effectiveAddress, network.chainId);
       const { sessionId } = await signAndSendTransactions({
         transactions: [rareFeeTransaction, harvestTransaction],
         transactionsDisplayInfo: {
@@ -880,6 +887,7 @@ const JorkinRoomPage = () => {
             farmId={selectedFarm.farm.id}
             stakingToken={selectedFarm.stakingToken}
             userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
+            addressOverride={effectiveAddress || undefined}
             onSuccess={handleModalSuccess}
           />
         )}
