@@ -215,7 +215,9 @@ export const StakingModal: React.FC<StakingModalProps> = ({
   // Subtract an integer token amount (e.g., 15 RARE) from a raw integer balance using BigInt
   const subtractFromRaw = (rawBalance: string, tokensToSubtract: number, decimals: number): string => {
     try {
-      const base = BigInt(10) ** BigInt(decimals);
+      // Compute 10^decimals without BigInt literals (compatible with < ES2020)
+      let base = BigInt(1);
+      for (let i = 0; i < decimals; i++) base *= BigInt(10);
       const delta = BigInt(Math.trunc(tokensToSubtract)) * base;
       const current = BigInt(rawBalance || '0');
       const result = current > delta ? current - delta : BigInt(0);
