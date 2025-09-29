@@ -91,6 +91,16 @@ const StakingRoomsPage = () => {
     }
   };
 
+  // Helper: compact number for UI (e.g., 2.5K, 2.5M) - used only in parentheses
+  const formatCompact = (balance: string, decimals: number = 18): string => {
+    try {
+      const num = parseFloat(balance) / Math.pow(10, decimals);
+      return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(num);
+    } catch {
+      return '0';
+    }
+  };
+
   // Helper function to get token image URL with manual fallbacks
   const getTokenImageUrl = (tokenIdentifier: string): string => {
     // Manual token identifiers for specific farms - use CDN URLs with specific identifiers
@@ -591,7 +601,7 @@ const StakingRoomsPage = () => {
                                         e.currentTarget.style.display = 'none';
                                       }}
                                     />
-                                    <span>{formatBalance(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)}</span>
+                                    <span>{formatCompact(farm.totalStaked, farm.stakingToken === 'LOKD-ff8f08' ? 6 : 18)}</span>
                                   </div>
                                   <span className="text-gray-400">)</span>
                                 </>
