@@ -52,26 +52,13 @@ export const StakingModal: React.FC<StakingModalProps> = ({
             const tokenData = await response.json();
             setUserBalance(tokenData.balance || '0');
           } else {
-            // Fallback: fetch all tokens and try to match by identifier variations (LP names/tickers)
+            // Fallback: fetch all tokens and try exact match only (no fuzzy matching)
             const listUrl = `${network.apiAddress}/accounts/${walletAddress}/tokens?size=2000`;
             const listRes = await fetch(listUrl);
             if (listRes.ok) {
               const tokens = await listRes.json();
-              const baseTicker = stakingToken.split('-')[0];
-              // Try exact identifier match first
+              // Only try exact identifier match - no fuzzy matching to avoid wrong tokens
               let found = tokens.find((t: any) => t.identifier === stakingToken);
-              // Try begins-with base ticker (covers cases where wallet holds a different suffix)
-              if (!found) {
-                found = tokens.find((t: any) => typeof t.identifier === 'string' && t.identifier.startsWith(baseTicker));
-              }
-              // Try matching by name for LPs (e.g., HYPEUSDCLP)
-              if (!found) {
-                const lpNameGuess = baseTicker.endsWith('LP') ? baseTicker : `${baseTicker}LP`;
-                found = tokens.find((t: any) => (
-                  (typeof t.identifier === 'string' && (t.identifier.startsWith(lpNameGuess) || t.identifier.includes(baseTicker))) ||
-                  (typeof t.name === 'string' && (t.name.startsWith(lpNameGuess) || t.name.includes(baseTicker)))
-                ));
-              }
               setUserBalance(found?.balance || '0');
             } else {
               setUserBalance('0');
