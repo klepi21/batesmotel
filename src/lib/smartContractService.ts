@@ -725,6 +725,27 @@ export class SmartContractService {
                     console.error(`❌ Farm 128: Error setting MEX API price:`, error);
                   }
                 }
+                
+                // Special handling for farm 129 - use jexchange API for LPOLVPXC-170a79
+                if (farm.id?.toString() === '129') {
+                  try {
+                    console.log('Fetching LPOLVPXC price from jexchange API for total staked USD...');
+                    const response = await fetch('https://api.jexchange.io/prices/LPOLVPXC-170a79');
+                    const priceData = await response.json();
+                    console.log('Jexchange API response for LPOLVPXC (total staked):', priceData);
+                    
+                    if (priceData && priceData.usdPrice) {
+                      const directPrice = parseFloat(priceData.usdPrice);
+                      totalStakedUSD = this.calculateTotalStakedUSD(totalStakedStr, directPrice);
+                      lpPrice = directPrice;
+                      console.log(`✅ Farm 129: Using jexchange API price: ${directPrice}, totalStakedUSD: ${totalStakedUSD}`);
+                    } else {
+                      console.log(`❌ No usdPrice in jexchange response for LPOLVPXC (total staked)`);
+                    }
+                  } catch (error) {
+                    console.error('Error fetching LPOLVPXC price from jexchange for total staked:', error);
+                  }
+                }
               } else {
                 // Use token pair data for single tokens
                 const tokenPair = this.findTokenPrice(stakingTokenStr);
