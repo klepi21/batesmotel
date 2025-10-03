@@ -451,6 +451,29 @@ export class SmartContractService {
               console.error(`❌ Farm 128 APR: Error setting MEX API price:`, error);
             }
           }
+          
+          // Special handling for farm 129 - use jexchange API for LPOLVPXC-170a79
+          if (farmId === '129') {
+            try {
+              console.log('Fetching LPOLVPXC price from jexchange API...');
+              const response = await fetch('https://api.jexchange.io/prices/LPOLVPXC-170a79');
+              const priceData = await response.json();
+              console.log('Jexchange API response for LPOLVPXC:', priceData);
+              
+              if (priceData && priceData.usdPrice) {
+                const directPrice = parseFloat(priceData.usdPrice);
+                stakedDollarValue = this.formatBalanceDollar(
+                  { balance: totalStaked, decimals: 18 },
+                  directPrice
+                );
+                console.log(`✅ LPOLVPXC staked calculation: amount=${totalStaked}, price=${directPrice}, dollarValue=${stakedDollarValue}`);
+              } else {
+                console.log(`❌ No usdPrice in jexchange response for LPOLVPXC`);
+              }
+            } catch (error) {
+              console.error('Error fetching LPOLVPXC price from jexchange:', error);
+            }
+          }
         }
       } else {
         // Use regular token pair price for single tokens

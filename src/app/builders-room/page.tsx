@@ -112,6 +112,10 @@ const BuildersRoomPage = () => {
     if (farmId === '125') {
       return { token1: 'BATES-bb3dd6', token2: 'DBATES-78f441' };
     }
+    // Special handling for farm 129
+    if (farmId === '129') {
+      return { token1: 'OLV-aa679c', token2: 'PXC-8c1247' };
+    }
     
     // For other farms, use the LP pair data
     const lpPair = smartContractService.findLPPair(stakingToken);
