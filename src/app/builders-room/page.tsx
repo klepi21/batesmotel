@@ -31,11 +31,26 @@ const BuildersRoomPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasEnoughRare, setHasEnoughRare] = useState<boolean>(false);
+  const [farm130Price, setFarm130Price] = useState<number | null>(null);
   
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'stake' | 'unstake'>('stake');
   const [selectedFarm, setSelectedFarm] = useState<FarmInfo | null>(null);
+
+  // Function to fetch farm 130 LP token price
+  const fetchFarm130Price = async () => {
+    try {
+      const response = await fetch('https://api.jexchange.io/prices/LPOLVREWA-d4ff37');
+      if (response.ok) {
+        const data = await response.json();
+        setFarm130Price(data.price || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch farm 130 price:', error);
+      setFarm130Price(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -47,6 +62,9 @@ const BuildersRoomPage = () => {
       const farmsData = await smartContractService.getSpecificFarms(allowedFarmIds);
       
       setFarms(farmsData);
+
+      // Fetch farm 130 LP token price
+      await fetchFarm130Price();
 
       // Fetch user-specific data if logged in
       if (effectiveIsLoggedIn && effectiveAddress) {
@@ -115,6 +133,10 @@ const BuildersRoomPage = () => {
     // Special handling for farm 129
     if (farmId === '129') {
       return { token1: 'OLV-aa679c', token2: 'PXC-8c1247' };
+    }
+    // Special handling for farm 130
+    if (farmId === '130') {
+      return { token1: 'OLV-aa679c', token2: 'REWARD-cf6eac' };
     }
     
     // For other farms, use the LP pair data
@@ -676,10 +698,13 @@ const BuildersRoomPage = () => {
                           <div className="flex justify-between text-xs sm:text-sm">
                             <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
                             <span className="text-white font-mono tracking-wide">
-                              {farm.totalStakedUSD && farm.totalStakedUSD > 0 
-                                ? `$${farm.totalStakedUSD.toFixed(2)}` 
-                                : formatBalance(farm.totalStaked)
-                              }
+                              {farm.farm.id === '130' && farm130Price !== null ? (
+                                `$${(parseFloat(farm.totalStaked) / Math.pow(10, 18) * farm130Price).toFixed(2)}`
+                              ) : farm.totalStakedUSD && farm.totalStakedUSD > 0 ? (
+                                `$${farm.totalStakedUSD.toFixed(2)}`
+                              ) : (
+                                formatBalance(farm.totalStaked)
+                              )}
                             </span>
                           </div>
                           <div className="flex justify-between text-xs sm:text-sm">
