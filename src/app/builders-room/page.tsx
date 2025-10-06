@@ -44,7 +44,7 @@ const BuildersRoomPage = () => {
       const response = await fetch('https://api.jexchange.io/prices/LPOLVREWA-d4ff37');
       if (response.ok) {
         const data = await response.json();
-        setFarm130Price(data.price || 0);
+        setFarm130Price(data.usdPrice || 0);
       }
     } catch (error) {
       console.error('Failed to fetch farm 130 price:', error);
@@ -699,7 +699,12 @@ const BuildersRoomPage = () => {
                             <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
                             <span className="text-white font-mono tracking-wide">
                               {farm.farm.id === '130' && farm130Price !== null ? (
-                                `$${(parseFloat(farm.totalStaked) / Math.pow(10, 18) * farm130Price).toFixed(2)}`
+                                (() => {
+                                  const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
+                                  const usdValue = totalStakedNum * farm130Price;
+                                  console.log(`Farm 130 Debug: totalStaked=${farm.totalStaked}, price=${farm130Price}, totalStakedNum=${totalStakedNum}, usdValue=${usdValue}`);
+                                  return `$${usdValue.toFixed(2)}`;
+                                })()
                               ) : farm.totalStakedUSD && farm.totalStakedUSD > 0 ? (
                                 `$${farm.totalStakedUSD.toFixed(2)}`
                               ) : (
