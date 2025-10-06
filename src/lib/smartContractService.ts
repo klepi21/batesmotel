@@ -474,6 +474,29 @@ export class SmartContractService {
               console.error('Error fetching LPOLVPXC price from jexchange:', error);
             }
           }
+          
+          // Special handling for farm 130 - use jexchange API for LPOLVREWA-d4ff37
+          if (farmId === '130') {
+            try {
+              console.log('Fetching LPOLVREWA price from jexchange API...');
+              const response = await fetch('https://api.jexchange.io/prices/LPOLVREWA-d4ff37');
+              const priceData = await response.json();
+              console.log('Jexchange API response for LPOLVREWA:', priceData);
+              
+              if (priceData && priceData.usdPrice) {
+                const directPrice = parseFloat(priceData.usdPrice);
+                stakedDollarValue = this.formatBalanceDollar(
+                  { balance: totalStaked, decimals: 18 },
+                  directPrice
+                );
+                console.log(`✅ LPOLVREWA staked calculation: amount=${totalStaked}, price=${directPrice}, dollarValue=${stakedDollarValue}`);
+              } else {
+                console.log(`❌ No usdPrice in jexchange response for LPOLVREWA`);
+              }
+            } catch (error) {
+              console.error('Error fetching LPOLVREWA price from jexchange:', error);
+            }
+          }
         }
       } else {
         // Use regular token pair price for single tokens
