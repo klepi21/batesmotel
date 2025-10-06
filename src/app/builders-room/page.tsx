@@ -221,6 +221,15 @@ const BuildersRoomPage = () => {
   // APR calculation - use calculated APR for multi-farms, simple calculation for others
   const calculateAPR = (farm: FarmInfo): number => {
     try {
+      // Debug logging for farm 130
+      if (farm.farm.id === '130') {
+        console.log(`Farm 130 APR Debug:`);
+        console.log(`- isMultiReward: ${farm.isMultiReward}`);
+        console.log(`- calculatedAPR: ${farm.calculatedAPR}`);
+        console.log(`- totalStaked: ${farm.totalStaked}`);
+        console.log(`- totalRewards: ${farm.totalRewards}`);
+        console.log(`- reward_token: ${farm.farm.reward_token}`);
+      }
 
       // For multi-farm pools, use the calculated APR from smart contract service
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
