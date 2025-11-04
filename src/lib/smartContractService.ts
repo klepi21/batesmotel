@@ -335,7 +335,7 @@ export class SmartContractService {
   async getCurrentEpoch(): Promise<number> {
     try {
       // Use the BlastAPI endpoint to get network stats
-      const response = await fetch('https://multiversx-api.blastapi.io/8be44138-082f-489f-8c13-d65058567ca4/stats');
+      const response = await fetch('https://api.multiversx.com/stats');
       const stats = await response.json();
       const currentEpoch = stats?.epoch || 1000;
       return currentEpoch;
