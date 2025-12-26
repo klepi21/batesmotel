@@ -145,6 +145,7 @@ export const StakingModal: React.FC<StakingModalProps> = ({
         mainTransaction = smartContractService.createUnstakeTransaction(
           farmId,
           amount,
+          stakingToken,
           walletAddress,
           network.chainId
         );

@@ -1000,10 +1000,28 @@ export class SmartContractService {
     });
   }
 
-  createUnstakeTransaction(farmId: string, amount: string, userAddress: string, chainId: string = '1'): Transaction {
+  createUnstakeTransaction(farmId: string, amount: string, stakingToken: string, userAddress: string, chainId: string = '1'): Transaction {
     
-    // Convert amount to BigInt (18 decimals for most tokens)
-    const tokenAmount = BigInt(parseFloat(amount) * Math.pow(10, 18));
+    // Convert amount to BigInt (using same decimal logic as stake)
+    // Check for tokens with different decimals
+    let decimals = 18; // Default to 18 decimals
+    if (stakingToken === 'LOKD-ff8f08') {
+      decimals = 6;
+    } else if (stakingToken === 'TCX-8d448d') {
+      decimals = 8; // TCX has 8 decimals
+    } else if (stakingToken.startsWith('USDC-') || stakingToken.startsWith('USDT-')) {
+      // Only for native USDC/USDT tokens, not LP tokens
+      decimals = 6;
+    }
+    // Try to get decimals from token pairs cache if available
+    try {
+      const tokenDecimals = this.getTokenDecimals(stakingToken);
+      if (tokenDecimals > 0) {
+        decimals = tokenDecimals;
+      }
+    } catch {}
+    
+    const tokenAmount = BigInt(Math.floor(parseFloat(amount) * Math.pow(10, decimals)));
     
     const functionName = 'unstake'; // Use plain function name for unstake
     const farmIdHex = BigInt(farmId).toString(16).padStart(2, '0'); // 2 hex digits for farm ID
