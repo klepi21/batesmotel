@@ -148,7 +148,7 @@ const LpStakingPage = () => {
     return null;
   };
 
-  // Helper function to get user's staked balance for a farm
+  // Helper function to get user's staked balance for a farm (formatted for display)
   const getUserStakedBalance = (farmId: string, stakingToken?: string) => {
     const userFarm = userFarms.find(uf => uf.farmId === farmId);
     if (!userFarm) return '0';
@@ -170,6 +170,15 @@ const LpStakingPage = () => {
     }
     
     return formatBalance(userFarm.stakedBalance, decimals);
+  };
+
+  // Helper function to get raw staked balance for unstake modal (returns raw string, not formatted)
+  const getUserStakedBalanceRaw = (farmId: string, stakingToken?: string): string => {
+    const userFarm = userFarms.find(uf => uf.farmId === farmId);
+    if (!userFarm) return '0';
+    
+    // Return the raw staked balance string - the modal will handle formatting
+    return userFarm.stakedBalance;
   };
 
   // Helper function to get user's harvestable rewards for a farm (formatted for display)
@@ -882,7 +891,7 @@ const LpStakingPage = () => {
             modalType={modalType}
             farmId={selectedFarm.farm.id}
             stakingToken={selectedFarm.stakingToken}
-            userStakedBalance={getUserStakedBalance(selectedFarm.farm.id, selectedFarm.stakingToken)}
+            userStakedBalance={getUserStakedBalanceRaw(selectedFarm.farm.id, selectedFarm.stakingToken)}
             addressOverride={effectiveAddress || undefined}
             skipFee={!!forcedAddress}
             onSuccess={handleModalSuccess}
