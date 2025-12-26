@@ -60,11 +60,35 @@ const LpStakingPage = () => {
           const userRewardsData = await smartContractService.getUserRewardsInfo(effectiveAddress);
           setUserRewards(userRewardsData);
 
+          // Log user rewards by farm
+          console.log(`[User Rewards] Address: ${effectiveAddress}`);
+          console.log(`[User Rewards] Total reward entries: ${userRewardsData.length}`);
+          
+          // Group rewards by farmId and log them
+          const rewardsByFarm: { [farmId: string]: typeof userRewardsData } = {};
+          userRewardsData.forEach(reward => {
+            if (!rewardsByFarm[reward.farmId]) {
+              rewardsByFarm[reward.farmId] = [];
+            }
+            rewardsByFarm[reward.farmId].push(reward);
+          });
+
+          Object.keys(rewardsByFarm).forEach(farmId => {
+            const farmRewards = rewardsByFarm[farmId];
+            console.log(`[User Rewards] Farm ${farmId}: ${farmRewards.length} reward token(s)`);
+            farmRewards.forEach(reward => {
+              const decimals = smartContractService.getTokenDecimals(reward.rewardToken);
+              const amount = parseFloat(reward.harvestableAmount) / Math.pow(10, decimals);
+              console.log(`  - ${reward.rewardToken}: ${amount.toFixed(6)} (raw: ${reward.harvestableAmount})`);
+            });
+          });
+
           // Check if user has enough RARE tokens (10 RARE required)
           const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
+          console.log(`[User Rewards] Has enough RARE (≥10): ${hasRare}`);
           setHasEnoughRare(hasRare);
         } catch (userError) {
-          // Error fetching user data
+          console.error('[User Rewards] Error fetching user data:', userError);
         }
       }
     } catch (err) {
@@ -148,10 +172,46 @@ const LpStakingPage = () => {
     return formatBalance(userFarm.stakedBalance, decimals);
   };
 
-  // Helper function to get user's harvestable rewards for a farm
+  // Helper function to get user's harvestable rewards for a farm (formatted for display)
   const getUserHarvestableRewards = (farmId: string) => {
     const userReward = userRewards.find(ur => ur.farmId === farmId);
     return userReward ? formatBalance(userReward.harvestableAmount) : '0';
+  };
+
+  // Helper function to get numeric harvestable rewards value for comparison
+  // For multi-reward farms, checks if any reward token has harvestable amount > 0
+  const getUserHarvestableRewardsNumeric = (farmId: string): number => {
+    // Filter rewards by farmId (convert both to string for comparison)
+    const farmRewards = userRewards.filter(ur => String(ur.farmId) === String(farmId));
+    
+    if (farmRewards.length === 0) {
+      console.log(`[Harvest Check Farm ${farmId}] No rewards found in userRewards array`);
+      return 0;
+    }
+    
+    console.log(`[Harvest Check Farm ${farmId}] Found ${farmRewards.length} reward entries`);
+    
+    // For multi-reward farms, check if any reward has amount > 0
+    for (const reward of farmRewards) {
+      const decimals = smartContractService.getTokenDecimals(reward.rewardToken);
+      const rawAmount = reward.harvestableAmount;
+      
+      // Handle both string numbers and scientific notation
+      // For very large numbers, parseFloat handles scientific notation automatically
+      const rawAmountNum = parseFloat(rawAmount);
+      const amount = rawAmountNum / Math.pow(10, decimals);
+      
+      console.log(`[Harvest Check Farm ${farmId}] Token ${reward.rewardToken}: rawAmount="${rawAmount}", rawAmountNum=${rawAmountNum}, decimals=${decimals}, calculated=${amount}`);
+      
+      // Use a small epsilon to handle floating point precision issues
+      if (amount > 0.000000000000000001) {
+        console.log(`[Harvest Check Farm ${farmId}] ✅ Found harvestable reward: ${reward.rewardToken} = ${amount} - ENABLING HARVEST`);
+        return 1; // Return 1 if any reward > 0 (harvest should be enabled)
+      }
+    }
+    
+    console.log(`[Harvest Check Farm ${farmId}] ❌ No harvestable rewards found (all amounts <= 0)`);
+    return 0; // No rewards available
   };
 
   // Helper: per-token rewards list for multi-reward farms
@@ -272,13 +332,23 @@ const LpStakingPage = () => {
     }
 
     try {
-      // Check harvestable rewards
-      const harvestableAmount = await smartContractService.calcHarvestableRewards(effectiveAddress, farm.farm.id);
-      const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
-      
-      if (harvestableNum <= 0) {
-        toast.error('No rewards available to harvest');
-        return;
+      // For multi-reward farms, check using our local rewards data instead of the contract query
+      // because calcHarvestableRewards only returns the first reward token's amount
+      if (farm.isMultiReward) {
+        const hasRewards = getUserHarvestableRewardsNumeric(farm.farm.id) > 0;
+        if (!hasRewards) {
+          toast.error('No rewards available to harvest');
+          return;
+        }
+      } else {
+        // For single-reward farms, use the contract query
+        const harvestableAmount = await smartContractService.calcHarvestableRewards(effectiveAddress, farm.farm.id);
+        const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
+        
+        if (harvestableNum <= 0) {
+          toast.error('No rewards available to harvest');
+          return;
+        }
       }
 
       // Create RARE fee transaction and harvest transaction
@@ -521,15 +591,6 @@ const LpStakingPage = () => {
                     .map((farm, index) => {
                     const farmColor = getFarmColor(farm.farm.id);
                     
-                    // Debug logging for farm tokens
-                    if (farm.farm.id === '124' || farm.farm.id === '125') {
-                      console.log(`Farm ${farm.farm.id} staking token:`, farm.stakingToken);
-                      const lpPair = smartContractService.findLPPair(farm.stakingToken);
-                      if (lpPair) {
-                        console.log(`Farm ${farm.farm.id} LP pair tokens:`, lpPair.token1lp, lpPair.token2lp);
-                      }
-                    }
-                    
                     return (
                       <motion.div
                         key={farm.farm.id}
@@ -749,14 +810,14 @@ const LpStakingPage = () => {
                           {/* Harvest Button - Disabled if no rewards available */}
                           <button
                             onClick={() => handleHarvestClick(farm)}
-                            disabled={parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 || !hasEnoughRare}
+                            disabled={getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 || !hasEnoughRare}
                             className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 || !hasEnoughRare
+                              getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'
                             }`}
                             style={{ imageRendering: 'pixelated' }}
-                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : parseFloat(getUserHarvestableRewards(farm.farm.id)) <= 0 ? 'No rewards available' : ''}
+                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 ? 'No rewards available' : ''}
                           >
                             HARVEST
                           </button>

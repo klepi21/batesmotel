@@ -198,11 +198,6 @@ export class SmartContractService {
   }
 
   findLPPair(stakingToken: string): LPPair | null {
-    // Debug logging for farm 128
-    if (stakingToken && stakingToken.includes('128') || stakingToken.startsWith('LP')) {
-      console.log(`🔍 findLPPair Debug for: ${stakingToken}`);
-    }
-    
     // Try to find exact match first
     let lpPair = this.lpPairs.find(pair => pair.lpidentifier === stakingToken);
     
@@ -215,11 +210,6 @@ export class SmartContractService {
         pair.token2lp.includes(tokenId)
       );
       
-      // Debug logging for farm 128
-      if (stakingToken && stakingToken.includes('128') || stakingToken.startsWith('LP')) {
-        console.log(`- Exact match not found, trying partial match with tokenId: ${tokenId}`);
-        console.log(`- Found partial match:`, lpPair);
-      }
     }
     
     return lpPair || null;
@@ -346,22 +336,14 @@ export class SmartContractService {
 
   async calculateMultiFarmAPR(farmId: string, stakingToken: string, totalStaked: string): Promise<number> {
     try {
-      console.log(`=== CALCULATING APR FOR FARM ${farmId} ===`);
-      console.log('Input parameters:', { farmId, stakingToken, totalStaked });
-      
       // Fetch multi-farm rewards left
       const multifarmRewardsLeft = await this.fetchMultiFarms2RewardsLeft();
-      console.log('All multifarm rewards left:', multifarmRewardsLeft);
       
       const farmRewardsLeft = multifarmRewardsLeft.filter(r => r.farmId === farmId);
-      console.log(`Farm ${farmId} rewards left:`, farmRewardsLeft);
       
       if (farmRewardsLeft.length === 0) {
-        console.log(`❌ No rewards left for farm ${farmId}, returning 0 APR`);
         return 0;
       }
-      
-      console.log(`✅ Found ${farmRewardsLeft.length} reward types for farm ${farmId}`);
 
       // Use cached price data if available - only fetch what we need
       if (this.tokenPairs.length === 0) {
@@ -371,11 +353,8 @@ export class SmartContractService {
       // Calculate rewards dollar value
       let rewardsDollarValue = 0;
       
-      console.log('Calculating rewards dollar value...');
       for (const reward of farmRewardsLeft) {
-        console.log(`Processing reward:`, reward);
         const tokenPair = this.findTokenPrice(reward.token);
-        console.log(`Token pair for ${reward.token}:`, tokenPair);
         
         if (tokenPair && tokenPair.tokenAprice) {
           const tokenPrice = parseFloat(tokenPair.tokenAprice);
@@ -384,25 +363,18 @@ export class SmartContractService {
             { balance: reward.amount, decimals },
             tokenPrice
           );
-          console.log(`Reward calculation: amount=${reward.amount}, decimals=${decimals}, price=${tokenPrice}, dollarValue=${dollarValue}`);
           rewardsDollarValue += dollarValue;
-        } else {
-          console.log(`❌ No price found for token ${reward.token}`);
         }
       }
-      console.log(`Total rewards dollar value: ${rewardsDollarValue}`);
 
       // Calculate staked dollar value
       let stakedDollarValue = 0;
       
-      console.log('Calculating staked dollar value...');
       // Check if this is an LP token (starts with LP, contains USDC, ends with LP, or contains WEGLD)
       const isLPToken = stakingToken.includes('USDC') || stakingToken.startsWith('LP') || stakingToken.endsWith('LP') || stakingToken.includes('WEGLD');
-      console.log(`Is LP token: ${isLPToken}`);
       
       if (isLPToken) {
         const lpPair = this.findLPPair(stakingToken);
-        console.log(`LP pair for ${stakingToken}:`, lpPair);
         
         if (lpPair && lpPair.lpprice) {
           const lpPrice = parseFloat(lpPair.lpprice);
@@ -410,17 +382,12 @@ export class SmartContractService {
             { balance: totalStaked, decimals: 18 },
             lpPrice
           );
-          console.log(`LP staked calculation: amount=${totalStaked}, price=${lpPrice}, dollarValue=${stakedDollarValue}`);
         } else {
-          console.log(`❌ No LP price found for ${stakingToken}`);
-          
           // Special handling for farm 127 - use jexchange API
           if (farmId === '127' && stakingToken === 'LPBATEJORK-bba5d2') {
             try {
-              console.log('Fetching LPBATEJORK price from jexchange API...');
               const response = await fetch('https://api.jexchange.io/prices/LPBATEJORK-bba5d2');
               const priceData = await response.json();
-              console.log('Jexchange API response:', priceData);
               
               if (priceData && priceData.usdPrice) {
                 const directPrice = parseFloat(priceData.usdPrice);
@@ -428,37 +395,30 @@ export class SmartContractService {
                   { balance: totalStaked, decimals: 18 },
                   directPrice
                 );
-                console.log(`✅ LPBATEJORK staked calculation: amount=${totalStaked}, price=${directPrice}, dollarValue=${stakedDollarValue}`);
-              } else {
-                console.log(`❌ No usdPrice in jexchange response`);
               }
             } catch (error) {
-              console.error('Error fetching LPBATEJORK price from jexchange:', error);
+              // Error fetching price
             }
           }
           
           // Special handling for farm 128 - use MEX API price
           if (farmId === '128' && stakingToken === 'TCXWEGLD-f1f2b1') {
             try {
-              console.log(`🔍 Farm 128 APR: Using MEX API price for ${stakingToken}`);
               const directPrice = 222506959.48998076; // From the MEX API response
               stakedDollarValue = this.formatBalanceDollar(
                 { balance: totalStaked, decimals: 18 },
                 directPrice
               );
-              console.log(`✅ Farm 128 APR: Using MEX API price: ${directPrice}, dollarValue=${stakedDollarValue}`);
             } catch (error) {
-              console.error(`❌ Farm 128 APR: Error setting MEX API price:`, error);
+              // Error setting price
             }
           }
           
           // Special handling for farm 129 - use jexchange API for LPOLVPXC-170a79
           if (farmId === '129') {
             try {
-              console.log('Fetching LPOLVPXC price from jexchange API...');
               const response = await fetch('https://api.jexchange.io/prices/LPOLVPXC-170a79');
               const priceData = await response.json();
-              console.log('Jexchange API response for LPOLVPXC:', priceData);
               
               if (priceData && priceData.usdPrice) {
                 const directPrice = parseFloat(priceData.usdPrice);
@@ -466,22 +426,17 @@ export class SmartContractService {
                   { balance: totalStaked, decimals: 18 },
                   directPrice
                 );
-                console.log(`✅ LPOLVPXC staked calculation: amount=${totalStaked}, price=${directPrice}, dollarValue=${stakedDollarValue}`);
-              } else {
-                console.log(`❌ No usdPrice in jexchange response for LPOLVPXC`);
               }
             } catch (error) {
-              console.error('Error fetching LPOLVPXC price from jexchange:', error);
+              // Error fetching price
             }
           }
           
           // Special handling for farm 130 - use jexchange API for LPOLVREWA-d4ff37
           if (farmId === '130') {
             try {
-              console.log('Fetching LPOLVREWA price from jexchange API...');
               const response = await fetch('https://api.jexchange.io/prices/LPOLVREWA-d4ff37');
               const priceData = await response.json();
-              console.log('Jexchange API response for LPOLVREWA:', priceData);
               
               if (priceData && priceData.usdPrice) {
                 const directPrice = parseFloat(priceData.usdPrice);
@@ -489,19 +444,15 @@ export class SmartContractService {
                   { balance: totalStaked, decimals: 18 },
                   directPrice
                 );
-                console.log(`✅ LPOLVREWA staked calculation: amount=${totalStaked}, price=${directPrice}, dollarValue=${stakedDollarValue}`);
-              } else {
-                console.log(`❌ No usdPrice in jexchange response for LPOLVREWA`);
               }
             } catch (error) {
-              console.error('Error fetching LPOLVREWA price from jexchange:', error);
+              // Error fetching price
             }
           }
         }
       } else {
         // Use regular token pair price for single tokens
         const stakingTokenPair = this.findTokenPrice(stakingToken);
-        console.log(`Token pair for ${stakingToken}:`, stakingTokenPair);
         if (stakingTokenPair && stakingTokenPair.tokenAprice) {
           const stakingTokenPrice = parseFloat(stakingTokenPair.tokenAprice);
           const decimals = this.getTokenDecimals(stakingToken);
@@ -509,38 +460,28 @@ export class SmartContractService {
             { balance: totalStaked, decimals },
             stakingTokenPrice
           );
-          console.log(`Token staked calculation: amount=${totalStaked}, decimals=${decimals}, price=${stakingTokenPrice}, dollarValue=${stakedDollarValue}`);
-        } else {
-          console.log(`❌ No price found for staking token ${stakingToken}`);
         }
       }
-      console.log(`Total staked dollar value: ${stakedDollarValue}`);
 
       if (stakedDollarValue === 0) {
-        console.log(`❌ Staked dollar value is 0, returning 0 APR`);
         return 0;
       }
 
       if (rewardsDollarValue === 0) {
-        console.log(`❌ Rewards dollar value is 0, returning 0 APR`);
         return 0;
       }
 
       // Get epochs remaining for this farm
       const epochsRemaining = await this.getEpochsRemainingForFarm(farmId);
-      console.log(`Epochs remaining for farm ${farmId}: ${epochsRemaining}`);
       
       if (epochsRemaining <= 0) {
-        console.log(`❌ No epochs remaining, returning 0 APR`);
         return 0;
       }
       
       // APR = (Rewards Value / Staked Value) × 100 × 365 / Epochs Remaining
       const apr = ((rewardsDollarValue / stakedDollarValue) * 100 * 365) / epochsRemaining;
-      console.log(`APR calculation: (${rewardsDollarValue} / ${stakedDollarValue}) * 100 * 365 / ${epochsRemaining} = ${apr}`);
       
       const finalAPR = Math.round(apr);
-      console.log(`✅ Final APR for farm ${farmId}: ${finalAPR}%`);
       return finalAPR;
       
     } catch (error) {
@@ -550,42 +491,14 @@ export class SmartContractService {
 
   async getSpecificFarms(farmIds: string[]): Promise<FarmInfo[]> {
     try {
-      console.log(`🔍 Fetching specific farms: ${farmIds.join(', ')}`);
+      // Use the existing getAllFarms
+      const allFarms = await this.getAllFarms();
       
-      // Temporarily disable verbose logging
-      const originalConsoleLog = console.log;
-      console.log = (...args) => {
-        // Only log if it's related to our target farms or important messages
-        const message = args.join(' ');
-        if (message.includes('Farm 128') || 
-            message.includes('Farm 129') || 
-            message.includes('Farm 130') || 
-            message.includes('Farm 131') || 
-            message.includes('Farm 132') || 
-            message.includes('Farm 133') || 
-            message.includes('Farm 134') || 
-            message.includes('Farm 135') ||
-            message.includes('Successfully fetched') ||
-            message.includes('Error fetching')) {
-          originalConsoleLog(...args);
-        }
-      };
+      // Filter to only the farms we need
+      const filteredFarms = allFarms.filter(farm => farmIds.includes(farm.farm.id));
       
-      try {
-        // Use the existing getAllFarms but with reduced console logging
-        const allFarms = await this.getAllFarms();
-        
-        // Filter to only the farms we need
-        const filteredFarms = allFarms.filter(farm => farmIds.includes(farm.farm.id));
-        
-        console.log(`✅ Successfully filtered to ${filteredFarms.length} specific farms`);
-        return filteredFarms;
-      } finally {
-        // Restore original console.log
-        console.log = originalConsoleLog;
-      }
+      return filteredFarms;
     } catch (error) {
-      console.error('Error fetching specific farms:', error);
       return [];
     }
   }
@@ -641,11 +554,8 @@ export class SmartContractService {
               let calculatedAPR = 0;
               
               if (isMultiReward) {
-                console.log(`=== PROCESSING MULTI-REWARD FARM ${farm.id?.toString()} ===`);
-                
                 // Fetch multi-reward tokens
                 rewardTokens = await this.getMultifarmRewardTokens(farm.id?.toString() || '0');
-                console.log(`Farm ${farm.id?.toString()} reward tokens:`, rewardTokens);
                 
                 // For multi-reward farms, check if there are actually deposited rewards
                 // If there are reward tokens but no rewards left, consider it inactive
@@ -653,18 +563,14 @@ export class SmartContractService {
                   try {
                     // Use the same rewards left data that will be used for APR calculation
                     const rewardsLeft = await this.getMultifarmsRewardsLeft();
-                    console.log(`All rewards left for farm ${farm.id?.toString()}:`, rewardsLeft);
                     
                     const farmRewardsLeft = rewardsLeft.filter(r => r.farmId === farm.id?.toString());
-                    console.log(`Farm ${farm.id?.toString()} specific rewards left:`, farmRewardsLeft);
                     
                     const hasDepositedRewards = farmRewardsLeft.some(r => r.amount !== '0');
-                    console.log(`Farm ${farm.id?.toString()} has deposited rewards:`, hasDepositedRewards);
                     
                     // Override isActive based on whether rewards are actually deposited
                     if (hasDepositedRewards) {
                       isActive = true;
-                      console.log(`✅ Farm ${farm.id?.toString()} is active, calculating APR...`);
                       
                       // Calculate proper APR for multi-farm using dollar values
                       calculatedAPR = await this.calculateMultiFarmAPR(
@@ -672,19 +578,14 @@ export class SmartContractService {
                         stakingTokenStr,
                         totalStakedStr
                       );
-                      console.log(`Farm ${farm.id?.toString()} calculated APR:`, calculatedAPR);
                     } else {
-                      console.log(`❌ Farm ${farm.id?.toString()} has no deposited rewards`);
                       // For multi-reward farms with no rewards deposited, set a default APR
                       // This prevents showing 0% APR for farms that are ready but waiting for rewards
                       calculatedAPR = 0; // Keep as 0, will be handled in UI
                     }
                   } catch (error) {
-                    console.error(`Error processing farm ${farm.id?.toString()}:`, error);
                     // Error checking rewards left
                   }
-                } else {
-                  console.log(`❌ Farm ${farm.id?.toString()} has no reward tokens`);
                 }
               }
               
@@ -697,17 +598,6 @@ export class SmartContractService {
                 // Use LP pair data for LP tokens
                 const lpPair = this.findLPPair(stakingTokenStr);
                 lpPrice = lpPair ? parseFloat(lpPair.lpprice) : 0;
-                
-                // Debug logging for farm 128
-                if (farm.id?.toString() === '128') {
-                  console.log(`🔍 Farm 128 Debug:`);
-                  console.log(`- Staking Token: ${stakingTokenStr}`);
-                  console.log(`- Is LP Token: ${isLPToken}`);
-                  console.log(`- LP Pair Found:`, lpPair);
-                  console.log(`- LP Price: ${lpPrice}`);
-                  console.log(`- Total LP Pairs Available: ${this.lpPairs.length}`);
-                  console.log(`- First few LP pairs:`, this.lpPairs.slice(0, 3));
-                }
                 
                 totalStakedUSD = lpPrice > 0 ? this.calculateTotalStakedUSD(totalStakedStr, lpPrice) : 0;
                 
@@ -731,42 +621,35 @@ export class SmartContractService {
                       lpPrice = directPrice;
                     }
                   } catch (error) {
-                    console.error('Error fetching LPBATEJORK price:', error);
+                    // Error fetching price
                   }
                 }
                 
                 // Special handling for farm 128 - use MEX API data if available
                 if (farm.id?.toString() === '128' && stakingTokenStr === 'TCXWEGLD-f1f2b1') {
                   try {
-                    console.log(`🔍 Farm 128: Looking for TCXWEGLD-f1f2b1 in MEX API data`);
                     // The token should be in the MEX API data with price 222506959.48998076
                     const directPrice = 222506959.48998076; // From the API response you provided
                     totalStakedUSD = this.calculateTotalStakedUSD(totalStakedStr, directPrice);
                     lpPrice = directPrice;
-                    console.log(`✅ Farm 128: Using MEX API price: ${directPrice}`);
                   } catch (error) {
-                    console.error(`❌ Farm 128: Error setting MEX API price:`, error);
+                    // Error setting price
                   }
                 }
                 
                 // Special handling for farm 129 - use jexchange API for LPOLVPXC-170a79
                 if (farm.id?.toString() === '129') {
                   try {
-                    console.log('Fetching LPOLVPXC price from jexchange API for total staked USD...');
                     const response = await fetch('https://api.jexchange.io/prices/LPOLVPXC-170a79');
                     const priceData = await response.json();
-                    console.log('Jexchange API response for LPOLVPXC (total staked):', priceData);
                     
                     if (priceData && priceData.usdPrice) {
                       const directPrice = parseFloat(priceData.usdPrice);
                       totalStakedUSD = this.calculateTotalStakedUSD(totalStakedStr, directPrice);
                       lpPrice = directPrice;
-                      console.log(`✅ Farm 129: Using jexchange API price: ${directPrice}, totalStakedUSD: ${totalStakedUSD}`);
-                    } else {
-                      console.log(`❌ No usdPrice in jexchange response for LPOLVPXC (total staked)`);
                     }
                   } catch (error) {
-                    console.error('Error fetching LPOLVPXC price from jexchange for total staked:', error);
+                    // Error fetching price
                   }
                 }
               } else {

@@ -136,6 +136,23 @@ const JorkinRoomPage = () => {
     return userReward ? formatBalance(userReward.harvestableAmount) : '0';
   }
 
+  // Helper function to get numeric harvestable rewards value for comparison
+  // For multi-reward farms, checks if any reward token has harvestable amount > 0
+  function getUserHarvestableRewardsNumeric(farmId: string): number {
+    const farmRewards = userRewards.filter(ur => ur.farmId === farmId);
+    if (farmRewards.length === 0) return 0;
+    
+    // For multi-reward farms, check if any reward has amount > 0
+    for (const reward of farmRewards) {
+      const decimals = smartContractService.getTokenDecimals(reward.rewardToken);
+      const amount = parseFloat(reward.harvestableAmount) / Math.pow(10, decimals);
+      if (amount > 0) {
+        return 1; // Return 1 if any reward > 0 (harvest should be enabled)
+      }
+    }
+    return 0; // No rewards available
+  }
+
   // Per-token rewards for multi-reward farms
   function getUserRewardsByFarm(farmId: string): { token: string; amount: string; decimals: number }[] {
     return userRewards
@@ -723,10 +740,10 @@ const JorkinRoomPage = () => {
                     </button>
                     <button
                       onClick={() => handleHarvestClick(farm116)}
-                      disabled={parseFloat(getUserHarvestableRewards(farm116.farm.id)) <= 0 || !hasEnoughRare}
-                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${parseFloat(getUserHarvestableRewards(farm116.farm.id)) <= 0 || !hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'}`}
+                      disabled={getUserHarvestableRewardsNumeric(farm116.farm.id) <= 0 || !hasEnoughRare}
+                      className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${getUserHarvestableRewardsNumeric(farm116.farm.id) <= 0 || !hasEnoughRare ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'}`}
                       style={{ imageRendering: 'pixelated' }}
-                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : parseFloat(getUserHarvestableRewards(farm116.farm.id)) <= 0 ? 'No rewards available' : ''}
+                      title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : getUserHarvestableRewardsNumeric(farm116.farm.id) <= 0 ? 'No rewards available' : ''}
                     >
                       HARVEST
                     </button>
