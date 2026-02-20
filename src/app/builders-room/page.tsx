@@ -32,7 +32,7 @@ const BuildersRoomPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasEnoughRare, setHasEnoughRare] = useState<boolean>(false);
   const [farm130Price, setFarm130Price] = useState<number | null>(null);
-  
+
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'stake' | 'unstake'>('stake');
@@ -60,7 +60,7 @@ const BuildersRoomPage = () => {
       // Fetch only the specific farms we need: 128, 129, 130, 131, 132, 133, 134, 135
       const allowedFarmIds = ['128', '129', '130', '131', '132', '133', '134', '135'];
       const farmsData = await smartContractService.getSpecificFarms(allowedFarmIds);
-      
+
       setFarms(farmsData);
 
       // Fetch farm 130 LP token price
@@ -98,9 +98,9 @@ const BuildersRoomPage = () => {
   // Helper function to format balance
   const formatBalance = (balance: string, decimals: number = 18) => {
     const num = parseFloat(balance) / Math.pow(10, decimals);
-    return num.toLocaleString('en-US', { 
-      minimumFractionDigits: 0, 
-      maximumFractionDigits: 18 
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 18
     });
   };
 
@@ -138,13 +138,13 @@ const BuildersRoomPage = () => {
     if (farmId === '130') {
       return { token1: 'OLV-aa679c', token2: 'REWARD-cf6eac' };
     }
-    
+
     // For other farms, use the LP pair data
     const lpPair = smartContractService.findLPPair(stakingToken);
     if (lpPair) {
       return { token1: lpPair.token1lp, token2: lpPair.token2lp };
     }
-    
+
     return null;
   };
 
@@ -152,10 +152,10 @@ const BuildersRoomPage = () => {
   const getUserStakedBalance = (farmId: string, stakingToken?: string) => {
     const userFarm = userFarms.find(uf => uf.farmId === farmId);
     if (!userFarm) return '0';
-    
+
     // Use correct decimals for the staking token
     let decimals = 18; // Default to 18 decimals
-    
+
     if (stakingToken) {
       // Check for specific tokens with different decimals
       if (stakingToken === 'LOKD-ff8f08') {
@@ -168,7 +168,7 @@ const BuildersRoomPage = () => {
         decimals = 6; // USDC/USDT typically have 6 decimals
       }
     }
-    
+
     // Debug logging for farm 128
     if (farmId === '128') {
       console.log(`🔍 Farm 128 Debug:`);
@@ -177,7 +177,7 @@ const BuildersRoomPage = () => {
       console.log(`- Using decimals: ${decimals}`);
       console.log(`- Formatted balance: ${formatBalance(userFarm.stakedBalance, decimals)}`);
     }
-    
+
     return formatBalance(userFarm.stakedBalance, decimals);
   };
 
@@ -192,12 +192,12 @@ const BuildersRoomPage = () => {
   const getUserHarvestableRewardsNumeric = (farmId: string): number => {
     const farmRewards = userRewards.filter(ur => ur.farmId === farmId);
     if (farmRewards.length === 0) return 0;
-    
+
     // For multi-reward farms, check if any reward has amount > 0
     for (const reward of farmRewards) {
       const decimals = smartContractService.getTokenDecimals(reward.rewardToken);
       const amount = parseFloat(reward.harvestableAmount) / Math.pow(10, decimals);
-      if (amount > 0) {
+      if (amount > 0.000000000000000001) {
         return 1; // Return 1 if any reward > 0 (harvest should be enabled)
       }
     }
@@ -252,16 +252,16 @@ const BuildersRoomPage = () => {
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
         return farm.calculatedAPR;
       }
-      
+
       // For regular farms, use simple calculation with proper decimal handling
       const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
       const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
-      
-      
+
+
       if (totalStakedNum === 0) {
         return 0;
       }
-      
+
       // Simple APR calculation (annualized)
       const apr = (totalRewardsNum / totalStakedNum) * 100 * 365;
       return Math.round(apr); // Round to whole number
@@ -283,13 +283,13 @@ const BuildersRoomPage = () => {
       toast.error('Please connect your wallet first');
       return;
     }
-    
+
     // Check if user has enough RARE tokens
     if (!hasEnoughRare) {
       toast.error('You need at least 10 RARE tokens to perform staking operations');
       return;
     }
-    
+
     setSelectedFarm(farm);
     setModalType('stake');
     setModalOpen(true);
@@ -300,19 +300,19 @@ const BuildersRoomPage = () => {
       toast.error('Please connect your wallet first');
       return;
     }
-    
+
     // Check if user has enough RARE tokens
     if (!hasEnoughRare) {
       toast.error('You need at least 10 RARE tokens to perform staking operations');
       return;
     }
-    
+
     const stakedBalance = getUserStakedBalance(farm.farm.id, farm.stakingToken);
     if (parseFloat(stakedBalance) <= 0) {
       toast.error('No tokens staked in this farm');
       return;
     }
-    
+
     setSelectedFarm(farm);
     setModalType('unstake');
     setModalOpen(true);
@@ -332,12 +332,23 @@ const BuildersRoomPage = () => {
 
     try {
       // Check harvestable rewards
-      const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
-      const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
-      
-      if (harvestableNum <= 0) {
-        toast.error('No rewards available to harvest');
-        return;
+      // For multi-reward farms, check using our local rewards data instead of the contract query
+      // because calcHarvestableRewards only returns the first reward token's amount
+      if (farm.isMultiReward) {
+        const hasRewards = getUserHarvestableRewardsNumeric(farm.farm.id) > 0;
+        if (!hasRewards) {
+          toast.error('No rewards available to harvest');
+          return;
+        }
+      } else {
+        // For single-reward farms, use the contract query
+        const harvestableAmount = await smartContractService.calcHarvestableRewards(address, farm.farm.id);
+        const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
+
+        if (harvestableNum <= 0) {
+          toast.error('No rewards available to harvest');
+          return;
+        }
       }
 
       // Create RARE fee transaction and harvest transaction
@@ -384,7 +395,7 @@ const BuildersRoomPage = () => {
         // Unlock panel closed
       }
     });
-    
+
     unlockPanelManager.openUnlockPanel();
   };
 
@@ -402,8 +413,8 @@ const BuildersRoomPage = () => {
           />
           <div className="absolute inset-0 bg-black bg-opacity-70"></div>
         </div>
-        <Toaster 
-          theme="dark" 
+        <Toaster
+          theme="dark"
           position="bottom-right"
           toastOptions={{
             style: {
@@ -419,7 +430,7 @@ const BuildersRoomPage = () => {
             <div className="text-center">
               <motion.h1
                 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-purple-500 font-mono mb-1 sm:mb-2 tracking-wider"
-                style={{ 
+                style={{
                   textShadow: '0 0 10px #8A2BE2, 0 0 20px #8A2BE2',
                   letterSpacing: '0.2em'
                 }}
@@ -458,7 +469,7 @@ const BuildersRoomPage = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     </button>
-                    
+
                     {/* Open in Explorer Button */}
                     <button
                       onClick={openAddressInExplorer}
@@ -469,7 +480,7 @@ const BuildersRoomPage = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </button>
-                    
+
                     {/* Disconnect Button */}
                     <button
                       onClick={handleDisconnect}
@@ -561,7 +572,7 @@ const BuildersRoomPage = () => {
                 <div className="text-yellow-400 font-mono tracking-wide">Loading farms from blockchain...</div>
               </div>
             )}
-            
+
             {error && (
               <div className="text-center py-8">
                 <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-4 mb-4">
@@ -570,7 +581,7 @@ const BuildersRoomPage = () => {
                 </div>
               </div>
             )}
-            
+
             {!loading && !error && farms.length > 0 && (
               <div className="bg-gray-900 border border-purple-500 rounded-lg p-4 sm:p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -578,276 +589,273 @@ const BuildersRoomPage = () => {
                   {farms
                     .filter(farm => ['128', '129', '130', '131', '132', '133', '134', '135'].includes(farm.farm.id))
                     .map((farm, index) => {
-                    const farmColor = getFarmColor(farm.farm.id);
-                    
-                    // Debug logging for farm tokens
-                    if (farm.farm.id === '124' || farm.farm.id === '125') {
-                      console.log(`Farm ${farm.farm.id} staking token:`, farm.stakingToken);
-                      const lpPair = smartContractService.findLPPair(farm.stakingToken);
-                      if (lpPair) {
-                        console.log(`Farm ${farm.farm.id} LP pair tokens:`, lpPair.token1lp, lpPair.token2lp);
+                      const farmColor = getFarmColor(farm.farm.id);
+
+                      // Debug logging for farm tokens
+                      if (farm.farm.id === '124' || farm.farm.id === '125') {
+                        console.log(`Farm ${farm.farm.id} staking token:`, farm.stakingToken);
+                        const lpPair = smartContractService.findLPPair(farm.stakingToken);
+                        if (lpPair) {
+                          console.log(`Farm ${farm.farm.id} LP pair tokens:`, lpPair.token1lp, lpPair.token2lp);
+                        }
                       }
-                    }
-                    
-                    return (
-                      <motion.div
-                        key={farm.farm.id}
-                        className="relative bg-gradient-to-b from-gray-900 to-black border-2 sm:border-4 p-4 sm:p-6 font-mono"
-                        style={{
-                          borderColor: farmColor,
-                          boxShadow: `0 0 20px ${farmColor}20, inset 0 0 20px ${farmColor}10`,
-                          imageRendering: 'pixelated',
-                          clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
-                        }}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                      >
-                        {/* Farm Header */}
-                        <div className="text-center mb-4 sm:mb-6">
-                          <h3 className="text-lg sm:text-xl font-bold text-white font-mono mb-1 sm:mb-2 tracking-wide" style={{ 
-                            textShadow: `0 0 5px ${farmColor}`,
-                            letterSpacing: '0.1em'
-                          }}>
-                            Farm #{farm.farm.id}
-                          </h3>
-                          <div className="text-2xl sm:text-3xl font-bold font-mono tracking-wider" style={{ 
-                            color: farmColor,
-                            textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`,
-                            letterSpacing: '0.1em'
-                          }}>
-                            {farm.farm.id === '124' || farm.farm.id === '125' ? 'Huge Rewards' : `${calculateAPR(farm)}% APR`}
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
-                            <div className="flex items-center justify-center space-x-2">
-                              {/* For LP tokens, show the underlying tokens using new MEX pairs API */}
-                              {(() => {
-                                // Get LP pair tokens (with special handling for farms 124 and 125)
-                                const lpPairTokens = getLPPairTokens(farm.farm.id, farm.stakingToken);
-                                
-                                if (lpPairTokens) {
-                                  // Show the two underlying tokens on the left, reward tokens on the right
-                                  return (
-                                    <>
-                                        <img 
-                                         src={getTokenImageUrl(lpPairTokens.token1)}
+
+                      return (
+                        <motion.div
+                          key={farm.farm.id}
+                          className="relative bg-gradient-to-b from-gray-900 to-black border-2 sm:border-4 p-4 sm:p-6 font-mono"
+                          style={{
+                            borderColor: farmColor,
+                            boxShadow: `0 0 20px ${farmColor}20, inset 0 0 20px ${farmColor}10`,
+                            imageRendering: 'pixelated',
+                            clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
+                          }}
+                          initial={{ opacity: 0, y: 30 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.6, delay: index * 0.1 }}
+                        >
+                          {/* Farm Header */}
+                          <div className="text-center mb-4 sm:mb-6">
+                            <h3 className="text-lg sm:text-xl font-bold text-white font-mono mb-1 sm:mb-2 tracking-wide" style={{
+                              textShadow: `0 0 5px ${farmColor}`,
+                              letterSpacing: '0.1em'
+                            }}>
+                              Farm #{farm.farm.id}
+                            </h3>
+                            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-wider" style={{
+                              color: farmColor,
+                              textShadow: `0 0 10px ${farmColor}, 0 0 20px ${farmColor}`,
+                              letterSpacing: '0.1em'
+                            }}>
+                              {farm.farm.id === '124' || farm.farm.id === '125' ? 'Huge Rewards' : `${calculateAPR(farm)}% APR`}
+                            </div>
+                            <div className="text-xs sm:text-sm text-gray-400 font-mono tracking-wide mt-1">
+                              <div className="flex items-center justify-center space-x-2">
+                                {/* For LP tokens, show the underlying tokens using new MEX pairs API */}
+                                {(() => {
+                                  // Get LP pair tokens (with special handling for farms 124 and 125)
+                                  const lpPairTokens = getLPPairTokens(farm.farm.id, farm.stakingToken);
+
+                                  if (lpPairTokens) {
+                                    // Show the two underlying tokens on the left, reward tokens on the right
+                                    return (
+                                      <>
+                                        <img
+                                          src={getTokenImageUrl(lpPairTokens.token1)}
                                           alt={lpPairTokens.token1}
                                           className="w-6 h-6 rounded-full"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                           }}
                                         />
-                                        <img 
-                                         src={getTokenImageUrl(lpPairTokens.token2)}
+                                        <img
+                                          src={getTokenImageUrl(lpPairTokens.token2)}
                                           alt={lpPairTokens.token2}
                                           className="w-6 h-6 rounded-full"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                           }}
                                         />
-                                      <span>/</span>
-                                      {/* Show multiple reward tokens for multi-reward farms */}
-                                      {farm.isMultiReward && farm.rewardTokens ? (
-                                        <div className="flex space-x-1">
-                                          {farm.rewardTokens.map((token: string, index: number) => (
-                                            <img 
-                                              key={index}
-                                              src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
-                                              alt={token}
-                                              className="w-6 h-6 rounded-full"
-                                              onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                              }}
-                                            />
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <img 
-                                          src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.farm.reward_token}/icon.png`}
-                                          alt={farm.farm.reward_token}
-                                          className="w-6 h-6 rounded-full"
-                                          onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                          }}
-                                        />
-                                      )}
-                                    </>
-                                  );
-                                } else {
-                                  // Fallback to original staking token
-                                  return (
-                                    <>
-                                        <img 
-                                         src={getTokenImageUrl(farm.stakingToken)}
+                                        <span>/</span>
+                                        {/* Show multiple reward tokens for multi-reward farms */}
+                                        {farm.isMultiReward && farm.rewardTokens ? (
+                                          <div className="flex space-x-1">
+                                            {farm.rewardTokens.map((token: string, index: number) => (
+                                              <img
+                                                key={index}
+                                                src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
+                                                alt={token}
+                                                className="w-6 h-6 rounded-full"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none';
+                                                }}
+                                              />
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <img
+                                            src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.farm.reward_token}/icon.png`}
+                                            alt={farm.farm.reward_token}
+                                            className="w-6 h-6 rounded-full"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                            }}
+                                          />
+                                        )}
+                                      </>
+                                    );
+                                  } else {
+                                    // Fallback to original staking token
+                                    return (
+                                      <>
+                                        <img
+                                          src={getTokenImageUrl(farm.stakingToken)}
                                           alt={farm.stakingToken}
                                           className="w-6 h-6 rounded-full"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
                                           }}
                                         />
-                                      <span>/</span>
-                                      {/* Show multiple reward tokens for multi-reward farms */}
-                                      {farm.isMultiReward && farm.rewardTokens ? (
-                                        <div className="flex space-x-1">
-                                          {farm.rewardTokens.map((token: string, index: number) => (
-                                            <img 
-                                              key={index}
-                                              src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
-                                              alt={token}
-                                              className="w-6 h-6 rounded-full"
-                                              onError={(e) => {
-                                                e.currentTarget.style.display = 'none';
-                                              }}
-                                            />
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <img 
-                                          src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.farm.reward_token}/icon.png`}
-                                          alt={farm.farm.reward_token}
-                                          className="w-6 h-6 rounded-full"
-                                          onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                          }}
-                                        />
-                                      )}
-                                    </>
-                                  );
-                                }
-                              })()}
+                                        <span>/</span>
+                                        {/* Show multiple reward tokens for multi-reward farms */}
+                                        {farm.isMultiReward && farm.rewardTokens ? (
+                                          <div className="flex space-x-1">
+                                            {farm.rewardTokens.map((token: string, index: number) => (
+                                              <img
+                                                key={index}
+                                                src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
+                                                alt={token}
+                                                className="w-6 h-6 rounded-full"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none';
+                                                }}
+                                              />
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <img
+                                            src={`https://tools.multiversx.com/assets-cdn/tokens/${farm.farm.reward_token}/icon.png`}
+                                            alt={farm.farm.reward_token}
+                                            className="w-6 h-6 rounded-full"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                            }}
+                                          />
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                })()}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Farm Stats */}
-                        <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                          <div className="flex justify-between text-xs sm:text-sm">
-                            <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
-                            <span className="text-white font-mono tracking-wide">
-                              {farm.farm.id === '130' && farm130Price !== null ? (
-                                (() => {
-                                  const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
-                                  const usdValue = totalStakedNum * farm130Price;
-                                  console.log(`Farm 130 Debug: totalStaked=${farm.totalStaked}, price=${farm130Price}, totalStakedNum=${totalStakedNum}, usdValue=${usdValue}`);
-                                  return `$${usdValue.toFixed(2)}`;
-                                })()
-                              ) : farm.totalStakedUSD && farm.totalStakedUSD > 0 ? (
-                                `$${farm.totalStakedUSD.toFixed(2)}`
-                              ) : (
-                                formatBalance(farm.totalStaked)
-                              )}
-                            </span>
+                          {/* Farm Stats */}
+                          <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-gray-400 font-mono tracking-wide">Total Staked:</span>
+                              <span className="text-white font-mono tracking-wide">
+                                {farm.farm.id === '130' && farm130Price !== null ? (
+                                  (() => {
+                                    const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
+                                    const usdValue = totalStakedNum * farm130Price;
+                                    console.log(`Farm 130 Debug: totalStaked=${farm.totalStaked}, price=${farm130Price}, totalStakedNum=${totalStakedNum}, usdValue=${usdValue}`);
+                                    return `$${usdValue.toFixed(2)}`;
+                                  })()
+                                ) : farm.totalStakedUSD && farm.totalStakedUSD > 0 ? (
+                                  `$${farm.totalStakedUSD.toFixed(2)}`
+                                ) : (
+                                  formatBalance(farm.totalStaked)
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
+                              <span className="text-white font-mono tracking-wide">
+                                {getUserStakedBalance(farm.farm.id, farm.stakingToken)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
+                              <span className="text-yellow-400 font-mono tracking-wide">
+                                {!farm.isMultiReward ? (
+                                  formatBalance(getUserHarvestableRewards(farm.farm.id))
+                                ) : (
+                                  <span className="block text-right">
+                                    {getUserRewardsByFarm(farm.farm.id).length === 0 && '0'}
+                                    {getUserRewardsByFarm(farm.farm.id).map((r, idx) => (
+                                      <span key={r.token + idx} className="flex items-center justify-end gap-1">
+                                        <img
+                                          src={`https://tools.multiversx.com/assets-cdn/tokens/${r.token}/icon.png`}
+                                          alt={r.token}
+                                          className="w-4 h-4 rounded-full"
+                                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                        <span>{formatBalance(r.amount, r.decimals)}</span>
+                                        <span className="text-gray-400">{r.token.split('-')[0]}</span>
+                                      </span>
+                                    ))}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-gray-400 font-mono tracking-wide">Status:</span>
+                              <span className={`font-mono tracking-wide ${farm.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                                {farm.isActive ? 'ACTIVE' : 'INACTIVE'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs sm:text-sm">
+                              <span className="text-gray-400 font-mono tracking-wide">Fee Required:</span>
+                              <span className={`font-mono tracking-wide ${hasEnoughRare ? 'text-green-400' : 'text-red-400'}`}>
+                                {hasEnoughRare ? '10 RARE ✓' : '10 RARE ✗'}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between text-xs sm:text-sm">
-                            <span className="text-gray-400 font-mono tracking-wide">My Staked:</span>
-                            <span className="text-white font-mono tracking-wide">
-                              {getUserStakedBalance(farm.farm.id, farm.stakingToken)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs sm:text-sm">
-                            <span className="text-gray-400 font-mono tracking-wide">My Rewards:</span>
-                            <span className="text-yellow-400 font-mono tracking-wide">
-                              {!farm.isMultiReward ? (
-                                formatBalance(getUserHarvestableRewards(farm.farm.id))
-                              ) : (
-                                <span className="block text-right">
-                                  {getUserRewardsByFarm(farm.farm.id).length === 0 && '0'}
-                                  {getUserRewardsByFarm(farm.farm.id).map((r, idx) => (
-                                    <span key={r.token + idx} className="flex items-center justify-end gap-1">
-                                      <img
-                                        src={`https://tools.multiversx.com/assets-cdn/tokens/${r.token}/icon.png`}
-                                        alt={r.token}
-                                        className="w-4 h-4 rounded-full"
-                                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                                      />
-                                      <span>{formatBalance(r.amount, r.decimals)}</span>
-                                      <span className="text-gray-400">{r.token.split('-')[0]}</span>
-                                    </span>
-                                  ))}
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs sm:text-sm">
-                            <span className="text-gray-400 font-mono tracking-wide">Status:</span>
-                            <span className={`font-mono tracking-wide ${farm.isActive ? 'text-green-400' : 'text-red-400'}`}>
-                              {farm.isActive ? 'ACTIVE' : 'INACTIVE'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs sm:text-sm">
-                            <span className="text-gray-400 font-mono tracking-wide">Fee Required:</span>
-                            <span className={`font-mono tracking-wide ${hasEnoughRare ? 'text-green-400' : 'text-red-400'}`}>
-                              {hasEnoughRare ? '10 RARE ✓' : '10 RARE ✗'}
-                            </span>
-                          </div>
-                        </div>
 
-                        {/* Action Buttons */}
-                        <div className="space-y-2 sm:space-y-3">
-                          <button
-                            onClick={() => handleStakeClick(farm)}
-                            disabled={!hasEnoughRare}
-                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              !hasEnoughRare
+                          {/* Action Buttons */}
+                          <div className="space-y-2 sm:space-y-3">
+                            <button
+                              onClick={() => handleStakeClick(farm)}
+                              disabled={!hasEnoughRare}
+                              className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${!hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-green-600 hover:bg-green-700 text-white border-green-500'
-                            }`}
-                            style={{ imageRendering: 'pixelated' }}
-                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to stake' : ''}
-                          >
-                            STAKE
-                          </button>
-                          
-                          {/* Unstake Button - Disabled if no tokens staked */}
-                          <button
-                            onClick={() => handleUnstakeClick(farm)}
-                            disabled={parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 || !hasEnoughRare}
-                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 || !hasEnoughRare
+                                }`}
+                              style={{ imageRendering: 'pixelated' }}
+                              title={!hasEnoughRare ? 'You need at least 10 RARE tokens to stake' : ''}
+                            >
+                              STAKE
+                            </button>
+
+                            {/* Unstake Button - Disabled if no tokens staked */}
+                            <button
+                              onClick={() => handleUnstakeClick(farm)}
+                              disabled={parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 || !hasEnoughRare}
+                              className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 text-white border-red-500'
-                            }`}
-                            style={{ imageRendering: 'pixelated' }}
-                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 ? 'No tokens staked' : ''}
-                          >
-                            UNSTAKE
-                          </button>
-                          
-                          {/* Harvest Button - Disabled if no rewards available */}
-                          <button
-                            onClick={() => handleHarvestClick(farm)}
-                            disabled={getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 || !hasEnoughRare}
-                            className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${
-                              getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 || !hasEnoughRare
+                                }`}
+                              style={{ imageRendering: 'pixelated' }}
+                              title={!hasEnoughRare ? 'You need at least 10 RARE tokens to unstake' : parseFloat(getUserStakedBalance(farm.farm.id, farm.stakingToken)) <= 0 ? 'No tokens staked' : ''}
+                            >
+                              UNSTAKE
+                            </button>
+
+                            {/* Harvest Button - Disabled if no rewards available */}
+                            <button
+                              onClick={() => handleHarvestClick(farm)}
+                              disabled={getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 || !hasEnoughRare}
+                              className={`w-full py-2 sm:py-3 font-bold transition-colors font-mono border-2 tracking-wide text-xs sm:text-sm ${getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 || !hasEnoughRare
                                 ? 'bg-gray-600 text-gray-400 border-gray-500 cursor-not-allowed'
                                 : 'bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500'
-                            }`}
-                            style={{ imageRendering: 'pixelated' }}
-                            title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 ? 'No rewards available' : ''}
-                          >
-                            HARVEST
-                          </button>
-                        </div>
+                                }`}
+                              style={{ imageRendering: 'pixelated' }}
+                              title={!hasEnoughRare ? 'You need at least 10 RARE tokens to harvest' : getUserHarvestableRewardsNumeric(farm.farm.id) <= 0 ? 'No rewards available' : ''}
+                            >
+                              HARVEST
+                            </button>
+                          </div>
 
-                        {/* Pixel Art Border Effect */}
-                        <div
-                          className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                          style={{
-                            background: `repeating-linear-gradient(
+                          {/* Pixel Art Border Effect */}
+                          <div
+                            className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                            style={{
+                              background: `repeating-linear-gradient(
                               0deg,
                               transparent,
                               transparent 2px,
                               ${farmColor}20 2px,
                               ${farmColor}20 4px
                             )`,
-                            boxShadow: `0 0 30px ${farmColor}40, inset 0 0 20px ${farmColor}20`
-                          }}
-                        />
-                      </motion.div>
-                    );
-                  })}
+                              boxShadow: `0 0 30px ${farmColor}40, inset 0 0 20px ${farmColor}20`
+                            }}
+                          />
+                        </motion.div>
+                      );
+                    })}
                 </div>
-                
+
                 {/* Enter Elevator Button */}
                 <div className="text-center mt-6 sm:mt-8">
                   <motion.button
@@ -871,7 +879,7 @@ const BuildersRoomPage = () => {
                 </div>
               </div>
             )}
-            
+
             {!loading && !error && farms.length === 0 && (
               <div className="text-center py-8">
                 <div className="text-gray-400 font-mono tracking-wide">No farms found in the smart contract.</div>

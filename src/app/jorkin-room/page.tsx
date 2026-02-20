@@ -50,7 +50,7 @@ const JorkinRoomPage = () => {
   const clickAreaRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [emojiBursts, setEmojiBursts] = useState<Array<{ id: number; x: number; y: number; vx: number; vy: number; rot: number; char: string; size: number; duration: number; delay: number }>>([]);
-  const EMOJIS = ["🍆","🍑","😩","👉","👌","💦","🔞","🤤","🍌","👙","🍑","👙"];
+  const EMOJIS = ["🍆", "🍑", "😩", "👉", "👌", "💦", "🔞", "🤤", "🍌", "👙", "🍑", "👙"];
 
   const fetchData = async () => {
     try {
@@ -58,9 +58,9 @@ const JorkinRoomPage = () => {
       setError(null);
 
       const farmsData = await smartContractService.getAllFarms();
-      
+
       const only127 = farmsData.find(f => f.farm.id === '127') || null;
-      
+
       // Debug logging for farm 127
       if (only127) {
         console.log('=== JORKIN ROOM - FARM 127 DATA ===');
@@ -73,7 +73,7 @@ const JorkinRoomPage = () => {
         console.log('Farm 127 stakingToken:', only127.stakingToken);
         console.log('Farm 127 isActive:', only127.isActive);
       }
-      
+
       setFarm116(only127);
 
       if (effectiveIsLoggedIn && effectiveAddress) {
@@ -82,8 +82,8 @@ const JorkinRoomPage = () => {
           setUserFarms(userFarmsData);
 
           const userRewardsData = await smartContractService.getUserRewardsInfo(effectiveAddress);
-          
-          
+
+
           setUserRewards(userRewardsData);
 
           const hasRare = await smartContractService.hasEnoughRareTokens(effectiveAddress);
@@ -111,10 +111,10 @@ const JorkinRoomPage = () => {
   function getUserStakedBalance(farmId: string, stakingToken?: string) {
     const userFarm = userFarms.find(uf => uf.farmId === farmId);
     if (!userFarm) return '0';
-    
+
     // Use correct decimals for the staking token
     let decimals = 18; // Default to 18 decimals
-    
+
     if (stakingToken) {
       // Check for specific tokens with different decimals
       if (stakingToken === 'LOKD-ff8f08') {
@@ -127,7 +127,7 @@ const JorkinRoomPage = () => {
         decimals = 6; // USDC/USDT typically have 6 decimals
       }
     }
-    
+
     return formatBalance(userFarm.stakedBalance, decimals);
   }
 
@@ -141,12 +141,12 @@ const JorkinRoomPage = () => {
   function getUserHarvestableRewardsNumeric(farmId: string): number {
     const farmRewards = userRewards.filter(ur => ur.farmId === farmId);
     if (farmRewards.length === 0) return 0;
-    
+
     // For multi-reward farms, check if any reward has amount > 0
     for (const reward of farmRewards) {
       const decimals = smartContractService.getTokenDecimals(reward.rewardToken);
       const amount = parseFloat(reward.harvestableAmount) / Math.pow(10, decimals);
-      if (amount > 0) {
+      if (amount > 0.000000000000000001) {
         return 1; // Return 1 if any reward > 0 (harvest should be enabled)
       }
     }
@@ -183,13 +183,13 @@ const JorkinRoomPage = () => {
     if (farmId === '127') {
       return { token1: 'BATES-bb3dd6', token2: 'JORKIN-7d6f75' };
     }
-    
+
     // For other farms, use the LP pair data
     const lpPair = smartContractService.findLPPair(stakingToken);
     if (lpPair) {
       return { token1: lpPair.token1lp, token2: lpPair.token2lp };
     }
-    
+
     return null;
   };
 
@@ -198,7 +198,7 @@ const JorkinRoomPage = () => {
       if (farm.isMultiReward && farm.calculatedAPR !== undefined) {
         return farm.calculatedAPR;
       }
-      
+
       const totalStakedNum = parseFloat(farm.totalStaked) / Math.pow(10, 18);
       const totalRewardsNum = parseFloat(farm.totalRewards) / Math.pow(10, 18);
       if (totalStakedNum === 0) return 0;
@@ -256,9 +256,23 @@ const JorkinRoomPage = () => {
     if (!effectiveIsLoggedIn || !effectiveAddress) { toast.error('Please connect your wallet first'); return; }
     if (!hasEnoughRare) { toast.error('You need at least 10 RARE tokens to perform staking operations'); return; }
     try {
-      const harvestableAmount = await smartContractService.calcHarvestableRewards(effectiveAddress, farm.farm.id);
-      const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
-      if (harvestableNum <= 0) { toast.error('No rewards available to harvest'); return; }
+      // For multi-reward farms, check using our local rewards data instead of the contract query
+      // because calcHarvestableRewards only returns the first reward token's amount
+      if (farm.isMultiReward) {
+        const hasRewards = getUserHarvestableRewardsNumeric(farm.farm.id) > 0;
+        if (!hasRewards) {
+          toast.error('No rewards available to harvest');
+          return;
+        }
+      } else {
+        // For single-reward farms, use the contract query
+        const harvestableAmount = await smartContractService.calcHarvestableRewards(effectiveAddress, farm.farm.id);
+        const harvestableNum = parseFloat(harvestableAmount) / Math.pow(10, 18);
+        if (harvestableNum <= 0) {
+          toast.error('No rewards available to harvest');
+          return;
+        }
+      }
       const rareFeeTransaction = smartContractService.createRareFeeTransaction(effectiveAddress, network.chainId);
       const harvestTransaction = smartContractService.createHarvestTransaction(farm.farm.id, effectiveAddress, network.chainId);
       const { sessionId } = await signAndSendTransactions({
@@ -279,8 +293,8 @@ const JorkinRoomPage = () => {
 
   function handleConnectWallet() {
     const unlockPanelManager = UnlockPanelManager.init({
-      loginHandler: () => {},
-      onClose: () => {}
+      loginHandler: () => { },
+      onClose: () => { }
     });
     unlockPanelManager.openUnlockPanel();
   }
@@ -326,9 +340,9 @@ const JorkinRoomPage = () => {
         video.currentTime = 0;
         const playPromise = video.play();
         if (playPromise && typeof playPromise.then === 'function') {
-          playPromise.catch(() => {});
+          playPromise.catch(() => { });
         }
-      } catch {}
+      } catch { }
     }
     // Emoji bursts: 3-4 per click, spawn on circular edge and fly outward
     const mediaEl = buttonRef.current;
@@ -383,8 +397,8 @@ const JorkinRoomPage = () => {
   return (
     <AuthRedirectWrapper requireAuth={false}>
       <div className="min-h-screen bg-black relative">
-        <Toaster 
-          theme="dark" 
+        <Toaster
+          theme="dark"
           position="bottom-right"
           toastOptions={{
             style: { background: '#1A1A1A', border: '1px solid rgba(147, 51, 234, 0.3)', color: 'white' }
@@ -433,7 +447,7 @@ const JorkinRoomPage = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     </button>
-                    
+
                     {/* Open in Explorer Button */}
                     <button
                       onClick={openAddressInExplorer}
@@ -444,7 +458,7 @@ const JorkinRoomPage = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </button>
-                    
+
                     {/* Disconnect Button */}
                     <button
                       onClick={handleDisconnect}
@@ -572,12 +586,12 @@ const JorkinRoomPage = () => {
                         {(() => {
                           // Get LP pair tokens (with special handling for farm 127)
                           const lpPairTokens = getLPPairTokens(farm116.farm.id, farm116.stakingToken);
-                          
+
                           if (lpPairTokens) {
                             // Show the two underlying tokens on the left, reward tokens on the right
                             return (
                               <>
-                                <img 
+                                <img
                                   src={getTokenImageUrl(lpPairTokens.token1)}
                                   alt={lpPairTokens.token1}
                                   className="w-6 h-6 rounded-full"
@@ -585,7 +599,7 @@ const JorkinRoomPage = () => {
                                     e.currentTarget.style.display = 'none';
                                   }}
                                 />
-                                <img 
+                                <img
                                   src={getTokenImageUrl(lpPairTokens.token2)}
                                   alt={lpPairTokens.token2}
                                   className="w-6 h-6 rounded-full"
@@ -598,7 +612,7 @@ const JorkinRoomPage = () => {
                                 {farm116.isMultiReward && farm116.rewardTokens ? (
                                   <div className="flex space-x-1">
                                     {farm116.rewardTokens.map((token: string, index: number) => (
-                                      <img 
+                                      <img
                                         key={index}
                                         src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
                                         alt={token}
@@ -610,7 +624,7 @@ const JorkinRoomPage = () => {
                                     ))}
                                   </div>
                                 ) : (
-                                  <img 
+                                  <img
                                     src={`https://tools.multiversx.com/assets-cdn/tokens/${farm116.farm.reward_token}/icon.png`}
                                     alt={farm116.farm.reward_token}
                                     className="w-6 h-6 rounded-full"
@@ -625,7 +639,7 @@ const JorkinRoomPage = () => {
                             // Fallback to original staking token
                             return (
                               <>
-                                <img 
+                                <img
                                   src={getTokenImageUrl(farm116.stakingToken)}
                                   alt={farm116.stakingToken}
                                   className="w-6 h-6 rounded-full"
@@ -638,7 +652,7 @@ const JorkinRoomPage = () => {
                                 {farm116.isMultiReward && farm116.rewardTokens ? (
                                   <div className="flex space-x-1">
                                     {farm116.rewardTokens.map((token: string, index: number) => (
-                                      <img 
+                                      <img
                                         key={index}
                                         src={`https://tools.multiversx.com/assets-cdn/tokens/${token}/icon.png`}
                                         alt={token}
@@ -650,7 +664,7 @@ const JorkinRoomPage = () => {
                                     ))}
                                   </div>
                                 ) : (
-                                  <img 
+                                  <img
                                     src={`https://tools.multiversx.com/assets-cdn/tokens/${farm116.farm.reward_token}/icon.png`}
                                     alt={farm116.farm.reward_token}
                                     className="w-6 h-6 rounded-full"
@@ -823,7 +837,7 @@ const JorkinRoomPage = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.97 }}
                       >
-                          {timeLeftMs === 0 ? 'Jork' : 'Jork'}
+                        {timeLeftMs === 0 ? 'Jork' : 'Jork'}
                       </motion.button>
                     </div>
                   )}
